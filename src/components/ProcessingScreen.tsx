@@ -43,7 +43,7 @@ export default function ProcessingScreen({ item, onBack, onSimulateComplete }: P
                         {item.selectedAngle}
                     </h3>
                     <p className="text-white/50 text-sm">
-                        Our human writing team is crafting your content. You'll be notified when it's ready for review.
+                        Our human writing team is crafting your content. You&apos;ll be notified when it&apos;s ready for review.
                     </p>
                 </div>
 

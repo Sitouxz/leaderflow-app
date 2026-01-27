@@ -48,10 +48,16 @@ declare global {
 
 const CANCEL_THRESHOLD = 80;
 
+// Check for speech support outside of render to avoid setState in effect
+const getSpeechSupport = () => {
+    if (typeof window === 'undefined') return false;
+    return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+};
+
 export default function RecordButton({ onRecordComplete, onTextClick, isLoading }: RecordButtonProps) {
     const [isRecording, setIsRecording] = useState(false);
     const [transcript, setTranscript] = useState('');
-    const [speechSupported, setSpeechSupported] = useState(false);
+    const [speechSupported] = useState(getSpeechSupport);
     const [dragOffset, setDragOffset] = useState(0);
     const [isCancelling, setIsCancelling] = useState(false);
 
@@ -63,7 +69,6 @@ export default function RecordButton({ onRecordComplete, onTextClick, isLoading 
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            setSpeechSupported(!!SpeechRecognition);
 
             if (SpeechRecognition) {
                 const recognition = new SpeechRecognition();
@@ -76,7 +81,7 @@ export default function RecordButton({ onRecordComplete, onTextClick, isLoading 
 
         return () => {
             if (recognitionRef.current) {
-                try { recognitionRef.current.abort(); } catch (e) { /* ignore */ }
+                try { recognitionRef.current.abort(); } catch (_e) { /* ignore */ }
             }
         };
     }, []);
@@ -151,7 +156,7 @@ export default function RecordButton({ onRecordComplete, onTextClick, isLoading 
             recognition.start();
             isRecordingRef.current = true;
             setIsRecording(true);
-        } catch (e) {
+        } catch (_e) {
             isRecordingRef.current = false;
             setIsRecording(false);
         }
@@ -161,7 +166,7 @@ export default function RecordButton({ onRecordComplete, onTextClick, isLoading 
         const recognition = recognitionRef.current;
         if (!recognition || !isRecordingRef.current) return;
 
-        try { recognition.stop(); } catch (e) { /* ignore */ }
+        try { recognition.stop(); } catch (_e) { /* ignore */ }
 
         isRecordingRef.current = false;
         setIsRecording(false);
@@ -265,10 +270,10 @@ export default function RecordButton({ onRecordComplete, onTextClick, isLoading 
                             onTouchEnd={speechSupported ? (e) => { e.preventDefault(); stopRecording(); } : undefined}
                             disabled={isLoading || !speechSupported}
                             className={`relative z-10 flex items-center justify-center size-20 rounded-full transition-all duration-200 select-none ${isCancelling
-                                    ? 'bg-red-500/50 scale-90'
-                                    : isRecording
-                                        ? 'bg-red-500 scale-110 shadow-[0_0_60px_rgba(239,68,68,0.6)]'
-                                        : 'bg-primary shadow-glow hover:scale-105 active:scale-95'
+                                ? 'bg-red-500/50 scale-90'
+                                : isRecording
+                                    ? 'bg-red-500 scale-110 shadow-[0_0_60px_rgba(239,68,68,0.6)]'
+                                    : 'bg-primary shadow-glow hover:scale-105 active:scale-95'
                                 } ${isLoading || !speechSupported ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             <span

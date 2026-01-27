@@ -60,7 +60,7 @@ Here's what I've learned after years of experience in this field - and why I bel
 ⤵️ Save this for later | 🔄 Share with your network`;
 }
 
-function generateHashtags(angle: string): string[] {
+function generateHashtags(_angle: string): string[] {
     const baseHashtags = ['#Leadership', '#ThoughtLeadership', '#BusinessStrategy', '#ExecutiveInsights'];
     const topicHashtags = ['#Innovation', '#FutureOfWork', '#GrowthMindset', '#ProfessionalDevelopment'];
     const engagementHashtags = ['#LeadershipTips', '#CareerGrowth', '#SuccessMindset'];

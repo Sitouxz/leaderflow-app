@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { PipelineItem, PipelineStatus, MediaType, MediaContent, SocialPost } from '@/types/pipeline';
+import { PipelineItem, PipelineStatus, MediaType } from '@/types/pipeline';
 import { generateStrategicAngles } from '@/services/mockOpenAI';
 import { generateMediaContent, regenerateWithFeedback } from '@/services/mockMediaDesign';
 import { generateSocialPost } from '@/services/mockSocialPost';
