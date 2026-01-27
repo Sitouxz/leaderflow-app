@@ -48,16 +48,10 @@ declare global {
 
 const CANCEL_THRESHOLD = 80;
 
-// Check for speech support outside of render to avoid setState in effect
-const getSpeechSupport = () => {
-    if (typeof window === 'undefined') return false;
-    return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-};
-
 export default function RecordButton({ onRecordComplete, onTextClick, isLoading }: RecordButtonProps) {
     const [isRecording, setIsRecording] = useState(false);
     const [transcript, setTranscript] = useState('');
-    const [speechSupported] = useState(getSpeechSupport);
+    const [speechSupported, setSpeechSupported] = useState(false);
     const [dragOffset, setDragOffset] = useState(0);
     const [isCancelling, setIsCancelling] = useState(false);
 
@@ -76,6 +70,7 @@ export default function RecordButton({ onRecordComplete, onTextClick, isLoading 
                 recognition.interimResults = true;
                 recognition.lang = 'en-US';
                 recognitionRef.current = recognition;
+                setSpeechSupported(true);
             }
         }
 
@@ -189,7 +184,7 @@ export default function RecordButton({ onRecordComplete, onTextClick, isLoading 
     }, [onRecordComplete]);
 
     return (
-        <div className="flex flex-col items-center justify-end pb-8 pt-6">
+        <div className="flex flex-col items-center justify-end pb-4 pt-6">
             {/* Context Text - hidden when recording */}
             {!isRecording && (
                 <p className="text-white/50 text-sm font-medium mb-6 text-center tracking-wide">

@@ -24,15 +24,15 @@ export default function BottomNav({ activeTab = 'capture', onTabChange }: Bottom
     ];
 
     return (
-        <nav className="w-full border-t border-white/5 bg-background-dark/95 backdrop-blur-md pt-2 pb-8 px-6">
+        <nav className="w-full border-t border-white/5 bg-background-dark/95 backdrop-blur-md pt-2 pb-4 px-6" style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
             <div className="flex justify-around items-center max-w-md mx-auto">
                 {navItems.map((item) => (
                     <button
                         key={item.id}
                         onClick={() => handleClick(item.id)}
                         className={`flex flex-col items-center gap-1 p-2 transition-colors ${active === item.id
-                                ? 'text-primary'
-                                : 'text-white/40 hover:text-white'
+                            ? 'text-primary'
+                            : 'text-white/40 hover:text-white'
                             }`}
                     >
                         <span

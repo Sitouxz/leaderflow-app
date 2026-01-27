@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
@@ -7,6 +7,14 @@ const inter = Inter({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: "CyborgFlow Capture Dashboard",
@@ -27,7 +35,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} font-display bg-background-dark h-screen w-full overflow-hidden flex flex-col antialiased`}
+        className={`${inter.variable} font-display bg-background-dark h-full w-full overflow-hidden flex flex-col antialiased`}
       >
         {children}
       </body>

@@ -49,7 +49,7 @@ export default function Dashboard() {
     // Settings Screen
     if (showSettings) {
         return (
-            <>
+            <div className="flex flex-col h-full w-full overflow-hidden">
                 <BackgroundGradients />
                 <Header onSettingsClick={() => setShowSettings(false)} showBack />
                 <main className="flex-1 flex flex-col w-full max-w-md mx-auto px-6 relative z-10 overflow-auto">
@@ -82,7 +82,7 @@ export default function Dashboard() {
                     </div>
                 </main>
                 <BottomNav activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); setShowSettings(false); }} />
-            </>
+            </div>
         );
     }
 
@@ -91,7 +91,7 @@ export default function Dashboard() {
         // Stage 1: Ideation
         if (currentItem.status === 'ideation') {
             return (
-                <>
+                <div className="flex flex-col h-full w-full overflow-hidden">
                     <BackgroundGradients />
                     <Header onSettingsClick={() => setShowSettings(true)} />
                     <main className="flex-1 flex flex-col w-full max-w-md mx-auto px-6 relative z-10 overflow-hidden">
@@ -103,14 +103,14 @@ export default function Dashboard() {
                         />
                     </main>
                     <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
-                </>
+                </div>
             );
         }
 
         // Stage 2a: Media Type Selection
         if (currentItem.status === 'media_selection') {
             return (
-                <>
+                <div className="flex flex-col h-full w-full overflow-hidden">
                     <BackgroundGradients />
                     <Header onSettingsClick={() => setShowSettings(true)} />
                     <main className="flex-1 flex flex-col w-full max-w-md mx-auto px-6 relative z-10 overflow-hidden">
@@ -121,14 +121,14 @@ export default function Dashboard() {
                         />
                     </main>
                     <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
-                </>
+                </div>
             );
         }
 
         // Stage 2b: Media Generating / Review
         if (currentItem.status === 'media_generating' || currentItem.status === 'media_review') {
             return (
-                <>
+                <div className="flex flex-col h-full w-full overflow-hidden">
                     <BackgroundGradients />
                     <Header onSettingsClick={() => setShowSettings(true)} />
                     <main className="flex-1 flex flex-col w-full max-w-md mx-auto px-6 relative z-10 overflow-hidden">
@@ -142,14 +142,14 @@ export default function Dashboard() {
                         />
                     </main>
                     <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
-                </>
+                </div>
             );
         }
 
         // Stage 3: Scheduling
         if (currentItem.status === 'scheduling') {
             return (
-                <>
+                <div className="flex flex-col h-full w-full overflow-hidden">
                     <BackgroundGradients />
                     <Header onSettingsClick={() => setShowSettings(true)} />
                     <main className="flex-1 flex flex-col w-full max-w-md mx-auto px-6 relative z-10 overflow-hidden">
@@ -160,14 +160,14 @@ export default function Dashboard() {
                         />
                     </main>
                     <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
-                </>
+                </div>
             );
         }
 
         // Posted - Success View
         if (currentItem.status === 'posted') {
             return (
-                <>
+                <div className="flex flex-col h-full w-full overflow-hidden">
                     <BackgroundGradients />
                     <Header onSettingsClick={() => setShowSettings(true)} />
                     <main className="flex-1 flex flex-col w-full max-w-md mx-auto px-6 relative z-10 overflow-hidden">
@@ -197,7 +197,7 @@ export default function Dashboard() {
                         </div>
                     </main>
                     <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
-                </>
+                </div>
             );
         }
     }
@@ -205,7 +205,7 @@ export default function Dashboard() {
     // Library Tab
     if (activeTab === 'library') {
         return (
-            <>
+            <div className="flex flex-col h-full w-full overflow-hidden">
                 <BackgroundGradients />
                 <Header onSettingsClick={() => setShowSettings(true)} />
                 <main className="flex-1 flex flex-col w-full max-w-md mx-auto px-6 relative z-10 overflow-auto">
@@ -239,14 +239,14 @@ export default function Dashboard() {
                     </div>
                 </main>
                 <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
-            </>
+            </div>
         );
     }
 
     // Cognition Tab
     if (activeTab === 'cognition') {
         return (
-            <>
+            <div className="flex flex-col h-full w-full overflow-hidden">
                 <BackgroundGradients />
                 <Header onSettingsClick={() => setShowSettings(true)} />
                 <main className="flex-1 flex flex-col w-full max-w-md mx-auto px-6 relative z-10 overflow-auto">
@@ -278,16 +278,16 @@ export default function Dashboard() {
                     </div>
                 </main>
                 <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
-            </>
+            </div>
         );
     }
 
     // Default: Capture Tab
     return (
-        <>
+        <div className="flex flex-col h-full w-full overflow-hidden">
             <BackgroundGradients />
             <Header onSettingsClick={() => setShowSettings(true)} />
-            <main className="flex-1 flex flex-col w-full max-w-md mx-auto px-6 relative z-10">
+            <main className="flex-1 flex flex-col w-full max-w-md mx-auto px-6 relative z-10 overflow-hidden">
                 <div className="flex flex-col gap-6 mt-4">
                     <div className="flex items-end justify-between border-b border-white/10 pb-4">
                         <h2 className="text-white text-2xl font-bold tracking-tight">Active Pipelines</h2>
@@ -307,7 +307,7 @@ export default function Dashboard() {
                         )}
                     </div>
                 </div>
-                <div className="flex-1" />
+                <div className="flex-1 min-h-0" />
                 <RecordButton
                     onRecordComplete={handleCaptureSubmit}
                     onTextClick={() => setShowCaptureModal(true)}
@@ -316,6 +316,6 @@ export default function Dashboard() {
             </main>
             <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
             <CaptureModal isOpen={showCaptureModal} onClose={() => setShowCaptureModal(false)} onSubmit={handleCaptureSubmit} isLoading={isLoading} />
-        </>
+        </div>
     );
 }
