@@ -1,26 +1,55 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* Custom Theme Configuration - Ported from ui-example-1.html */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Colors */
+  --color-primary: #00eaff;
+  --color-background-light: #f5f8f8;
+  --color-background-dark: #050a0a;
+  --color-surface-dark: #0f1515;
+  
+  /* Font Family */
+  --font-display: "Inter", sans-serif;
+  
+  /* Border Radius */
+  --radius: 1rem;
+  --radius-lg: 1.5rem;
+  --radius-xl: 2rem;
+  --radius-2xl: 2.5rem;
+  --radius-full: 9999px;
+  
+  /* Box Shadows */
+  --shadow-glow: 0 0 20px 5px rgba(0, 234, 255, 0.3);
+  --shadow-glow-sm: 0 0 10px 2px rgba(0, 234, 255, 0.2);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Custom Pulse Animation for Button Glow */
+@keyframes subtle-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.2;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
   }
 }
 
+.animate-pulse-ring {
+  animation: subtle-pulse 3s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+/* Base Body Styles */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: max(884px, 100dvh);
+}
+
+/* Selection Styling */
+::selection {
+  background-color: var(--color-primary);
+  color: black;
 }
