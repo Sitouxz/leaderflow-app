@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { PipelineItem, PipelineStatus, MediaType } from '@/types/pipeline';
-import { generateStrategicAngles } from '@/services/mockOpenAI';
-import { generateMediaContent, regenerateWithFeedback } from '@/services/mockMediaDesign';
+import { generateStrategicAngles } from '@/services/openaiService';
+import { generateMediaContent, regenerateWithFeedback } from '@/services/geminiService';
 import { generateSocialPost } from '@/services/mockSocialPost';
 
 interface PipelineContextType {

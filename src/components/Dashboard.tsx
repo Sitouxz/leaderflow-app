@@ -12,6 +12,7 @@ import AngleSelectionScreen from '@/components/AngleSelectionScreen';
 import MediaTypeScreen from '@/components/MediaTypeScreen';
 import MediaReviewScreen from '@/components/MediaReviewScreen';
 import SchedulingScreen from '@/components/SchedulingScreen';
+import AISettingsPanel from '@/components/AISettingsPanel';
 
 type NavTab = 'capture' | 'library' | 'cognition';
 
@@ -32,6 +33,7 @@ export default function Dashboard() {
 
     const [showCaptureModal, setShowCaptureModal] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
+    const [showAISettings, setShowAISettings] = useState(false);
     const [activeTab, setActiveTab] = useState<NavTab>('capture');
 
     const liveCount = items.filter(item => item.status !== 'posted').length;
@@ -45,6 +47,19 @@ export default function Dashboard() {
     const handleCardClick = (item: typeof items[0]) => {
         setCurrentItem(item);
     };
+
+    // AI Settings Screen
+    if (showAISettings) {
+        return (
+            <div className="flex flex-col h-full w-full overflow-hidden">
+                <BackgroundGradients />
+                <main className="flex-1 flex flex-col w-full max-w-md mx-auto px-6 py-4 relative z-10 overflow-hidden">
+                    <AISettingsPanel onBack={() => setShowAISettings(false)} />
+                </main>
+                <BottomNav activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); setShowAISettings(false); }} />
+            </div>
+        );
+    }
 
     // Settings Screen
     if (showSettings) {
@@ -67,15 +82,24 @@ export default function Dashboard() {
                             </div>
                         </div>
                         <div className="bg-surface-dark border border-white/5 rounded-2xl p-5">
-                            <h3 className="text-white font-semibold mb-4">Integrations</h3>
+                            <h3 className="text-white font-semibold mb-4">AI & Integrations</h3>
                             <div className="space-y-3">
-                                <button className="w-full flex items-center justify-between py-3 text-white/70 hover:text-white transition-colors">
-                                    <span>Connected Accounts</span>
-                                    <span className="text-emerald-500 text-xs">4 Active</span>
+                                <button
+                                    onClick={() => { setShowSettings(false); setShowAISettings(true); }}
+                                    className="w-full flex items-center justify-between py-3 text-white/70 hover:text-white transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <span className="material-symbols-outlined text-primary" style={{ fontSize: '20px' }}>auto_awesome</span>
+                                        <span>AI Configuration</span>
+                                    </div>
+                                    <span className="material-symbols-outlined text-white/40" style={{ fontSize: '18px' }}>chevron_right</span>
                                 </button>
                                 <button className="w-full flex items-center justify-between py-3 text-white/70 hover:text-white transition-colors">
-                                    <span>AI Provider</span>
-                                    <span className="text-primary text-xs">OpenAI</span>
+                                    <div className="flex items-center gap-3">
+                                        <span className="material-symbols-outlined text-emerald-500" style={{ fontSize: '20px' }}>link</span>
+                                        <span>Connected Accounts</span>
+                                    </div>
+                                    <span className="text-emerald-500 text-xs">4 Active</span>
                                 </button>
                             </div>
                         </div>
