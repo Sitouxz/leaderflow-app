@@ -4,33 +4,31 @@
 
 export const AI_CONFIG = {
     openai: {
-        // GPT-5 for strategic thinking and content generation
-        chatModel: 'gpt-5' as const,
-        // Whisper for voice-to-text transcription
+        chatModel: 'gpt-4o' as const,
         whisperModel: 'whisper-1' as const,
-        // Note: GPT-5 only supports temperature=1 (default)
         maxAngles: 4,
     },
+    // base gemini config not really used directly now, replaced by helpers
     gemini: {
-        // Free tier: Gemini 2.5 Flash Image (Nano Banana)
-        model: 'gemini-2.5-flash-image' as const,
-        // Paid tier: Uncomment for Gemini 3 Pro Image (Nano Banana Pro)
-        // model: 'gemini-3-pro-image-preview' as const,
-        imageSize: '1024x1024' as const,
+        defaultModel: 'gemini-2.5-flash-image' as const,
     },
-    // Feature flags
-    useMockFallback: false, // Disabled - requires real API keys
+    useMockFallback: false,
 };
+
+export type GeminiModel = 'gemini-2.5-flash-image' | 'gemini-3-pro-image-preview';
+
+export interface GeminiConfig {
+    model: GeminiModel;
+    imageSize?: string;
+}
 
 /**
  * Get API keys from environment or localStorage
  */
 export function getOpenAIKey(): string | null {
-    // First check environment variable
     if (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_OPENAI_API_KEY) {
         return process.env.NEXT_PUBLIC_OPENAI_API_KEY || null;
     }
-    // Fallback to localStorage (for user-configured keys)
     if (typeof window !== 'undefined') {
         return localStorage.getItem('openai_api_key');
     }
@@ -38,11 +36,9 @@ export function getOpenAIKey(): string | null {
 }
 
 export function getGoogleAIKey(): string | null {
-    // First check environment variable
     if (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_GOOGLE_AI_API_KEY) {
         return process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY || null;
     }
-    // Fallback to localStorage (for user-configured keys)
     if (typeof window !== 'undefined') {
         return localStorage.getItem('google_ai_api_key');
     }
@@ -50,7 +46,41 @@ export function getGoogleAIKey(): string | null {
 }
 
 /**
- * Save API keys to localStorage
+ * Get configured Gemini Mode
+ */
+export function getGeminiModel(): GeminiModel {
+    if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('gemini_model');
+        if (stored === 'gemini-3-pro-image-preview' || stored === 'gemini-2.5-flash-image') {
+            return stored;
+        }
+    }
+    // Default to Flash (Free)
+    return 'gemini-2.5-flash-image';
+}
+
+/**
+ * Get full Gemini Configuration based on active model
+ */
+export function getGeminiConfig(): GeminiConfig {
+    const model = getGeminiModel();
+
+    if (model === 'gemini-3-pro-image-preview') {
+        return {
+            model,
+            imageSize: '2K',
+        };
+    }
+
+    // Default / Flash
+    return {
+        model: 'gemini-2.5-flash-image',
+        // No imageSize for Flash/Free tier
+    };
+}
+
+/**
+ * Save API keys and configuration
  */
 export function saveOpenAIKey(key: string): void {
     if (typeof window !== 'undefined') {
@@ -64,9 +94,12 @@ export function saveGoogleAIKey(key: string): void {
     }
 }
 
-/**
- * Check if AI services are configured
- */
+export function saveGeminiModel(model: GeminiModel): void {
+    if (typeof window !== 'undefined') {
+        localStorage.setItem('gemini_model', model);
+    }
+}
+
 export function isAIConfigured(): { openai: boolean; gemini: boolean } {
     return {
         openai: !!getOpenAIKey(),

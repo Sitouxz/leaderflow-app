@@ -65,6 +65,15 @@ export default function MediaReviewScreen({
         }
     };
 
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+    // Reset selection when content changes (e.g. regeneration)
+    if (selectedImage && !content.previewUrls?.includes(selectedImage) && selectedImage !== content.imageUrl) {
+        setSelectedImage(null);
+    }
+
+    const currentImage = selectedImage || content.imageUrl;
+
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
@@ -102,16 +111,27 @@ export default function MediaReviewScreen({
                 {/* Preview Tab */}
                 {activeTab === 'preview' && (
                     <div className="space-y-4">
-                        <div className="rounded-2xl overflow-hidden bg-surface-dark">
-                            <img src={content.imageUrl} alt={config?.label} className="w-full aspect-video object-cover" />
+                        <div className="rounded-2xl overflow-hidden bg-surface-dark relative group">
+                            <img src={currentImage} alt={config?.label} className="w-full aspect-video object-cover transition-opacity duration-300" />
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                <span className="text-white/80 text-sm font-medium">Preview Mode</span>
+                            </div>
                         </div>
                         {content.previewUrls && content.previewUrls.length > 1 && (
-                            <div className="flex gap-2 overflow-x-auto pb-2">
-                                {content.previewUrls.map((url, i) => (
-                                    <div key={i} className="shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-surface-dark ring-2 ring-white/10">
-                                        <img src={url} alt={`Slide ${i + 1}`} className="w-full h-full object-cover" />
-                                    </div>
-                                ))}
+                            <div className="flex gap-2 overflow-x-auto p-2 scrollbar-hide">
+                                {content.previewUrls.map((url, i) => {
+                                    const isSelected = url === currentImage;
+                                    return (
+                                        <button
+                                            key={i}
+                                            onClick={() => setSelectedImage(url)}
+                                            className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden bg-surface-dark transition-all ${isSelected ? 'ring-2 ring-primary scale-105' : 'ring-1 ring-white/10 opacity-70 hover:opacity-100 hover:scale-105'
+                                                }`}
+                                        >
+                                            <img src={url} alt={`Slide ${i + 1}`} className="w-full h-full object-cover" />
+                                        </button>
+                                    );
+                                })}
                             </div>
                         )}
                         {isVideo && content.videoBrief && (

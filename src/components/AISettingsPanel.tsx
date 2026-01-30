@@ -5,7 +5,10 @@ import {
     getOpenAIKey,
     getGoogleAIKey,
     saveOpenAIKey,
-    saveGoogleAIKey
+    saveGoogleAIKey,
+    getGeminiModel,
+    saveGeminiModel,
+    GeminiModel
 } from '@/services/aiConfig';
 import { testOpenAIConnection } from '@/services/openaiService';
 import { testGeminiConnection } from '@/services/geminiService';
@@ -24,11 +27,13 @@ export default function AISettingsPanel({ onBack }: AISettingsPanelProps) {
     const [statusMessage, setStatusMessage] = useState('');
     const [showOpenAIKey, setShowOpenAIKey] = useState(false);
     const [showGoogleAIKey, setShowGoogleAIKey] = useState(false);
+    const [geminiModel, setGeminiModel] = useState<GeminiModel>('gemini-2.5-flash-image');
 
     // Load existing keys on mount
     useEffect(() => {
         const existingOpenAI = getOpenAIKey();
         const existingGoogle = getGoogleAIKey();
+        setGeminiModel(getGeminiModel());
         if (existingOpenAI) setOpenAIKey(existingOpenAI);
         if (existingGoogle) setGoogleAIKey(existingGoogle);
     }, []);
@@ -47,6 +52,7 @@ export default function AISettingsPanel({ onBack }: AISettingsPanelProps) {
     const handleSaveGoogleAI = async () => {
         if (!googleAIKey.trim()) return;
         saveGoogleAIKey(googleAIKey.trim());
+        saveGeminiModel(geminiModel);
         setGoogleAIStatus('testing');
         setStatusMessage('Testing Gemini connection...');
 
@@ -169,6 +175,19 @@ export default function AISettingsPanel({ onBack }: AISettingsPanelProps) {
                                 </span>
                             </button>
                         </div>
+
+                        <div className="space-y-1">
+                            <label className="text-white/50 text-xs ml-1">Generation Model</label>
+                            <select
+                                value={geminiModel}
+                                onChange={(e) => setGeminiModel(e.target.value as GeminiModel)}
+                                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primary/50 [&>option]:bg-zinc-900"
+                            >
+                                <option value="gemini-2.5-flash-image">Gemini 2.5 Flash (Free Tier)</option>
+                                <option value="gemini-3-pro-image-preview">Gemini 3 Pro (Paid Tier)</option>
+                            </select>
+                        </div>
+
                         <button
                             onClick={handleSaveGoogleAI}
                             disabled={!googleAIKey.trim() || googleAIStatus === 'testing'}
@@ -188,10 +207,10 @@ export default function AISettingsPanel({ onBack }: AISettingsPanelProps) {
                 {/* Status Message */}
                 {statusMessage && (
                     <div className={`text-sm text-center py-2 ${openAIStatus === 'success' || googleAIStatus === 'success'
-                            ? 'text-emerald-400'
-                            : openAIStatus === 'error' || googleAIStatus === 'error'
-                                ? 'text-red-400'
-                                : 'text-white/60'
+                        ? 'text-emerald-400'
+                        : openAIStatus === 'error' || googleAIStatus === 'error'
+                            ? 'text-red-400'
+                            : 'text-white/60'
                         }`}>
                         {statusMessage}
                     </div>
