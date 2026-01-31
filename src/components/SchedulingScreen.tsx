@@ -1,12 +1,15 @@
 'use client';
 
 import { useState } from 'react';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
 import { PipelineItem, MEDIA_TYPE_CONFIG } from '@/types/pipeline';
 
 interface SchedulingScreenProps {
     item: PipelineItem;
     onConfirm: () => void;
     onBack: () => void;
+    onUpdateSchedule?: (date: Date) => void;
 }
 
 const PLATFORMS = [
@@ -16,10 +19,12 @@ const PLATFORMS = [
     { id: 'facebook', label: 'Facebook', icon: 'groups' },
 ];
 
-export default function SchedulingScreen({ item, onConfirm, onBack }: SchedulingScreenProps) {
+export default function SchedulingScreen({ item, onConfirm, onBack, onUpdateSchedule }: SchedulingScreenProps) {
     const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(
         item.socialPost?.platforms || ['linkedin', 'twitter']
     );
+    const [isEditingSchedule, setIsEditingSchedule] = useState(false);
+    const [editDate, setEditDate] = useState<Date | null>(null);
 
     const socialPost = item.socialPost;
     const mediaContent = item.mediaContent;
@@ -31,6 +36,20 @@ export default function SchedulingScreen({ item, onConfirm, onBack }: Scheduling
                 ? prev.filter(p => p !== id)
                 : [...prev, id]
         );
+    };
+
+    const handleEditClick = () => {
+        if (socialPost?.scheduledTime) {
+            setEditDate(new Date(socialPost.scheduledTime));
+            setIsEditingSchedule(true);
+        }
+    };
+
+    const handleSaveSchedule = () => {
+        if (editDate && onUpdateSchedule) {
+            onUpdateSchedule(editDate);
+            setIsEditingSchedule(false);
+        }
     };
 
     if (!socialPost || !mediaContent) {
@@ -135,28 +154,70 @@ export default function SchedulingScreen({ item, onConfirm, onBack }: Scheduling
 
                 {/* Schedule Time */}
                 <div className="bg-surface-dark border border-white/5 rounded-2xl p-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <span className="text-white/40 text-xs uppercase tracking-wider block mb-1">Scheduled for</span>
-                            <span className="text-white font-medium">
-                                {socialPost.scheduledTime.toLocaleString('en-US', {
-                                    weekday: 'short',
-                                    month: 'short',
-                                    day: 'numeric',
-                                    hour: 'numeric',
-                                    minute: '2-digit',
-                                })}
-                            </span>
+                    {isEditingSchedule ? (
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="text-white/40 text-xs uppercase tracking-wider">New Schedule Time</span>
+                            </div>
+                            <div className="relative">
+                                <DatePicker
+                                    selected={editDate}
+                                    onChange={(date) => setEditDate(date)}
+                                    showTimeSelect
+                                    dateFormat="MMMM d, yyyy h:mm aa"
+                                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary/50"
+                                    calendarClassName="theme-dark-calendar"
+                                    timeIntervals={15}
+                                    portalId="root-portal"
+                                />
+                                <span className="material-symbols-outlined absolute right-3 top-2.5 text-white/40 pointer-events-none" style={{ fontSize: '18px' }}>
+                                    calendar_today
+                                </span>
+                            </div>
+                            <div className="flex gap-2 justify-end">
+                                <button
+                                    onClick={() => setIsEditingSchedule(false)}
+                                    className="text-white/60 text-sm hover:text-white px-3 py-1.5"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSaveSchedule}
+                                    className="bg-primary text-black text-sm font-medium px-4 py-1.5 rounded-lg hover:bg-primary/90"
+                                >
+                                    Save
+                                </button>
+                            </div>
                         </div>
-                        <button className="text-primary text-sm hover:underline">Edit</button>
-                    </div>
+                    ) : (
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <span className="text-white/40 text-xs uppercase tracking-wider block mb-1">Scheduled for</span>
+                                <span className="text-white font-medium">
+                                    {socialPost.scheduledTime.toLocaleString('en-US', {
+                                        weekday: 'short',
+                                        month: 'short',
+                                        day: 'numeric',
+                                        hour: 'numeric',
+                                        minute: '2-digit',
+                                    })}
+                                </span>
+                            </div>
+                            <button
+                                onClick={handleEditClick}
+                                className="text-primary text-sm hover:underline"
+                            >
+                                Edit
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* Confirm Button */}
             <button
                 onClick={onConfirm}
-                disabled={selectedPlatforms.length === 0}
+                disabled={selectedPlatforms.length === 0 || isEditingSchedule}
                 className="mt-4 w-full py-4 rounded-xl bg-emerald-500 text-black font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
             >
                 <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>send</span>

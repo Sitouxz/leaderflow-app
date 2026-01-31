@@ -23,6 +23,7 @@ interface PipelineContextType {
 
     // Stage 3: Scheduling
     confirmPost: (itemId: string) => void;
+    updateScheduledTime: (itemId: string, date: Date) => void;
 
     // Navigation
     setCurrentItem: (item: PipelineItem | null) => void;
@@ -239,6 +240,17 @@ Here's what I've learned after years of building and scaling teams - and why I b
                 changeMediaType,
                 confirmPost,
                 setCurrentItem,
+                updateScheduledTime: (itemId: string, date: Date) => {
+                    const item = items.find(i => i.id === itemId);
+                    if (item?.socialPost) {
+                        updateItem(itemId, {
+                            socialPost: {
+                                ...item.socialPost,
+                                scheduledTime: date
+                            }
+                        });
+                    }
+                },
             }}
         >
             {children}

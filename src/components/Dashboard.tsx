@@ -28,7 +28,8 @@ export default function Dashboard() {
         rejectMedia,
         changeMediaType,
         confirmPost,
-        setCurrentItem
+        setCurrentItem,
+        updateScheduledTime
     } = usePipeline();
 
     const [showCaptureModal, setShowCaptureModal] = useState(false);
@@ -181,6 +182,7 @@ export default function Dashboard() {
                             item={currentItem}
                             onConfirm={() => confirmPost(currentItem.id)}
                             onBack={() => setCurrentItem(null)}
+                            onUpdateSchedule={(date) => updateScheduledTime(currentItem.id, date)}
                         />
                     </main>
                     <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />

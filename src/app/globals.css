@@ -69,3 +69,104 @@ body {
   background-color: var(--color-primary);
   color: black;
 }
+
+/* React Datepicker Dark Theme Overrides */
+.theme-dark-calendar {
+  font-family: var(--font-display);
+  background-color: var(--color-surface-dark) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 1rem !important;
+  color: white !important;
+  overflow: hidden;
+}
+
+.theme-dark-calendar .react-datepicker__header {
+  background-color: var(--color-surface-dark) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.theme-dark-calendar .react-datepicker__current-month,
+.theme-dark-calendar .react-datepicker-time__header,
+.theme-dark-calendar .react-datepicker-year-header {
+  color: white !important;
+  font-weight: 600;
+}
+
+.theme-dark-calendar .react-datepicker__day-name {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.theme-dark-calendar .react-datepicker__day {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.theme-dark-calendar .react-datepicker__day:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 50% !important;
+}
+
+.theme-dark-calendar .react-datepicker__day--selected,
+.theme-dark-calendar .react-datepicker__day--keyboard-selected {
+  background-color: var(--color-primary) !important;
+  color: black !important;
+  border-radius: 50% !important;
+  font-weight: bold !important;
+}
+
+.theme-dark-calendar .react-datepicker__time-container {
+  border-left: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.theme-dark-calendar .react-datepicker__time-container .react-datepicker__time {
+  background-color: var(--color-surface-dark) !important;
+}
+
+.theme-dark-calendar .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.theme-dark-calendar .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+}
+
+.theme-dark-calendar .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected {
+  background-color: var(--color-primary) !important;
+  color: black !important;
+  font-weight: bold !important;
+}
+
+/* Triangle/Arrow override */
+.theme-dark-calendar .react-datepicker__triangle {
+  display: none !important;
+}
+
+/* Fix z-index issue */
+.react-datepicker-popper {
+  z-index: 9999 !important;
+}
+
+/* Custom Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) var(--color-surface-dark);
+}
