@@ -304,3 +304,67 @@ export async function generateImageGenPromptAction(
         return { success: false, error: error?.message || String(error) || 'Unknown server error' };
     }
 }
+
+export async function generateCarouselPromptsAction(
+    apiKey: string,
+    angle: string
+): Promise<{ success: boolean; data?: string[]; error?: string }> {
+    try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+                model: AI_CONFIG.openai.chatModel,
+                messages: [
+                    { role: 'system', content: IMAGE_PROMPT_SYSTEM_PROMPT },
+                    {
+                        role: 'user',
+                        content: `Create 3 distinct, sequential image generation prompts for a LinkedIn carousel about: "${angle}".
+
+                        Structure the 3 slides as a visual story:
+                        1. Slide 1 (Hook): A striking, high-impact metaphorical image introducing the concept.
+                        2. Slide 2 (Insight): A detailed, complex visual representing the core analysis or friction.
+                        3. Slide 3 (Solution): A forward-looking, inspiring visual representing the resolution or future state.
+
+                        Style Requirements:
+                        - Maintain a cohesive "cinematic, premium, photorealistic" style across all 3.
+                        - strictly NO TEXT in the images.
+                        
+                        Output strictly as a JSON array of strings:
+                        ["prompt 1", "prompt 2", "prompt 3"]`
+                    }
+                ],
+                max_completion_tokens: 1000,
+            }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[OpenAI Action] Carousel Prompt API error:', response.status, errorText);
+            return { success: false, error: `API error: ${response.status}` };
+        }
+
+        const data: OpenAIResponse = await response.json();
+        console.log('[OpenAI Action] Carousel Prompt Raw Response:', JSON.stringify(data, null, 2));
+
+        let content = data.choices?.[0]?.message?.content;
+        if (!content) return { success: false, error: 'OpenAI returned empty content' };
+
+        // Clean markdown
+        content = content.replace(/```json\n?|\n?```/g, '');
+
+        const prompts = JSON.parse(content);
+        if (!Array.isArray(prompts) || prompts.length === 0) {
+            return { success: false, error: 'Failed to parse prompts array' };
+        }
+
+        return { success: true, data: prompts.slice(0, 3) };
+
+    } catch (error: any) {
+        console.error('[OpenAI Action] Carousel Prompt error:', error);
+        return { success: false, error: error?.message || String(error) };
+    }
+}

@@ -23,6 +23,7 @@ export default function MediaReviewScreen({
     const [showFeedback, setShowFeedback] = useState(false);
     const [feedback, setFeedback] = useState('');
     const [activeTab, setActiveTab] = useState<'preview' | 'caption' | 'seo'>('preview');
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     const mediaType = item.selectedMediaType;
     const content = item.mediaContent;
@@ -65,7 +66,7 @@ export default function MediaReviewScreen({
         }
     };
 
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
 
     // Reset selection when content changes (e.g. regeneration)
     if (selectedImage && !content.previewUrls?.includes(selectedImage) && selectedImage !== content.imageUrl) {

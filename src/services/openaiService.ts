@@ -269,3 +269,29 @@ export async function generateImageGenPrompt(
         return defaultPrompt;
     }
 }
+
+/**
+ * Generate 3 distinct prompts for carousel slides (via Server Action)
+ */
+export async function generateCarouselPrompts(angle: string): Promise<string[]> {
+    const apiKey = getOpenAIKey();
+
+    // Fallback: just return empty array so logic can fall back to single prompt repetition if needed, 
+    // or return default prompts.
+    if (!apiKey) return [];
+
+    try {
+        const { generateCarouselPromptsAction } = await import('@/actions/openai');
+        const result = await generateCarouselPromptsAction(apiKey, angle);
+
+        if (!result.success || !result.data) {
+            console.error('[OpenAI] Carousel prompts action failed:', result.error);
+            return [];
+        }
+
+        return result.data;
+    } catch (error) {
+        console.error('[OpenAI] Error generating carousel prompts:', error);
+        return [];
+    }
+}

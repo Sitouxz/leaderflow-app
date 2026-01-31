@@ -148,23 +148,59 @@ export async function generateMediaContent(
                 hashtags,
             };
 
-            // For carousel, generate additional images sequentially to avoid rate limiting
+            // For carousel, generate additional images sequentially
             if (mediaType === 'carousel') {
                 const additionalImages: string[] = [];
 
-                // We'll use the same base prompt but ask for variation in the call implicitly or explicitly?
-                // The previous code appended text. Let's do that for now to keep it simple, 
-                // or we could ask OpenAI for 3 prompts. For now, appending is faster/cheaper.
+                // Try to get 3 distinct high-quality prompts from OpenAI
+                // We typically need 2 more slides (total 3)
+                // actually we want to replace the first image if possible? 
+                // The flow is: we establish 'imagePrompt' (slide 1) earlier.
+                // Let's keep slide 1 as the 'Hook' (generated above) and ask for 2 more.
+                // OR we can ask for all 3 and use them. 
+                // Let's try to get 3 specific prompts for the WHOLE carousel to be cohesive.
 
-                // Second slide
-                console.log('[Gemini] Generating slide 2...');
-                const img2 = await callGeminiImageAPI(imagePrompt + ' -- Variation: Focus on key details/statistics. Maintain style.', apiKey);
-                if (img2) additionalImages.push(img2);
+                // However, we already generated the first image using 'imagePrompt'.
+                // Optimally, we should have detected 'carousel' earlier and generated 3 prompts then.
+                // But refactoring `generateMediaContent` structure might be risky.
 
-                // Third slide
-                console.log('[Gemini] Generating slide 3...');
-                const img3 = await callGeminiImageAPI(imagePrompt + ' -- Variation: Focus on practical application/next steps. Maintain style.', apiKey);
-                if (img3) additionalImages.push(img3);
+                // Plan:
+                // 1. Fetch 3 prompts.
+                // 2. We already have Slide 1 from the generic logic. We can keep it or discard it?
+                //    Discarding is wasteful.
+                //    Let's use the 'generateCarouselPrompts' which returns 3 prompts.
+                //    And if we are in carousel mode, we should have called that INSTEAD of 'generateImageGenPrompt'.
+
+                // Refactoring approach:
+                // We will implement a specific branch for current logic:
+
+                const carouselPrompts = await import('./openaiService').then(m => m.generateCarouselPrompts(selectedAngle));
+
+                if (carouselPrompts.length === 3) {
+                    // We have 3 perfect prompts.
+                    // The first image was already generated with a generic prompt. 
+                    // Let's generate Slide 2 and Slide 3 using the new specific prompts.
+                    // Actually, the new prompts are (Hook, Insight, Solution).
+                    // Slide 2 = Insight. Slide 3 = Solution.
+
+                    console.log('[Gemini] Generating slide 2 (Insight)...');
+                    const img2 = await callGeminiImageAPI(carouselPrompts[1], apiKey);
+                    if (img2) additionalImages.push(img2);
+
+                    console.log('[Gemini] Generating slide 3 (Solution)...');
+                    const img3 = await callGeminiImageAPI(carouselPrompts[2], apiKey);
+                    if (img3) additionalImages.push(img3);
+
+                } else {
+                    // Fallback to old variation logic
+                    console.log('[Gemini] Generating slide 2 (Variation)...');
+                    const img2 = await callGeminiImageAPI(imagePrompt + ' -- Variation: Focus on key details/statistics. Maintain style.', apiKey);
+                    if (img2) additionalImages.push(img2);
+
+                    console.log('[Gemini] Generating slide 3 (Variation)...');
+                    const img3 = await callGeminiImageAPI(imagePrompt + ' -- Variation: Focus on practical application/next steps. Maintain style.', apiKey);
+                    if (img3) additionalImages.push(img3);
+                }
 
                 content.previewUrls = [imageUrl, ...additionalImages];
             }
