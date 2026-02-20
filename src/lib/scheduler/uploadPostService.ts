@@ -207,10 +207,8 @@ export class UploadPostService {
             formData.append('timezone', 'UTC');
             formData.append('user', this.username);
 
-            // Add platforms
-            platforms.forEach(platform => {
-                formData.append('platform[]', platform);
-            });
+            // Add platforms with normalization
+            this.appendPlatforms(formData, platforms);
 
             // Handle file upload
             let endpoint = '';
@@ -292,7 +290,7 @@ export class UploadPostService {
                     retryFormData.append('scheduled_date', isoDate);
                     retryFormData.append('timezone', 'UTC');
                     retryFormData.append('user', this.username);
-                    platforms.forEach(p => retryFormData.append('platform[]', p));
+                    this.appendPlatforms(retryFormData, platforms);
                     retryFormData.append('url', content.imageUrl);
                     if (content.type !== 'video') retryFormData.append('photo_urls[]', content.imageUrl);
 
@@ -314,7 +312,7 @@ export class UploadPostService {
                     retryFormData.append('scheduled_date', isoDate);
                     retryFormData.append('timezone', 'UTC');
                     retryFormData.append('user', this.username);
-                    platforms.forEach(p => retryFormData.append('platform[]', p));
+                    this.appendPlatforms(retryFormData, platforms);
                     retryFormData.append('file', fileData, filename);
 
                     const retryResponse = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -335,7 +333,7 @@ export class UploadPostService {
                     retryFormData.append('scheduled_date', isoDate);
                     retryFormData.append('timezone', 'UTC');
                     retryFormData.append('user', this.username);
-                    platforms.forEach(p => retryFormData.append('platform[]', p));
+                    this.appendPlatforms(retryFormData, platforms);
                     retryFormData.append('photo', fileData, filename);
                     retryFormData.append('photos', fileData, filename);
 
@@ -391,6 +389,13 @@ export class UploadPostService {
         const response = await fetch(url);
         if (!response.ok) throw new Error(`Failed to fetch image from ${url}`);
         return await response.blob();
+    }
+
+    private appendPlatforms(formData: FormData, platforms: string[]) {
+        platforms.forEach(platform => {
+            const normalizedPlatform = platform.toLowerCase() === 'twitter' ? 'x' : platform;
+            formData.append('platform[]', normalizedPlatform);
+        });
     }
 
     private async retry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {

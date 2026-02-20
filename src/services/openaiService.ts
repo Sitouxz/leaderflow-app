@@ -1,24 +1,122 @@
 /**
  * OpenAI service for generating strategic angles and voice transcription.
- * Uses GPT-5 for thought leadership content generation.
+ * Uses GPT-4o for thought leadership content generation.
  * Uses Whisper for voice-to-text transcription.
  */
 
 import { AI_CONFIG, getOpenAIKey } from './aiConfig';
-import { GeneratedAngle, AngleType, ANGLE_TYPE_CONFIG } from '@/types/pipeline';
-import {
-    generateStrategicAnglesAction,
-    generateVideoBriefAction,
-    generateSocialContentAction,
-    generateImageGenPromptAction
-} from '@/actions/openai';
+import { GeneratedAngle, AngleType, SocialContent } from '@/types/pipeline';
+import { BrandProfile } from '@prisma/client';
+import * as Prompts from '@/lib/prompts';
 
-export { ANGLE_TYPE_CONFIG };
-export type { GeneratedAngle, AngleType };
+// ----------------------------------------------------------------------
+// Interfaces
+// ----------------------------------------------------------------------
 
-interface WhisperResponse {
+export interface OpenAIRequestPayload {
+    model: string;
+    messages: Array<{
+        role: 'system' | 'user' | 'assistant';
+        content: string;
+    }>;
+    response_format?: { type: 'json_object' };
+    temperature?: number;
+    max_completion_tokens?: number;
+}
+
+export interface OpenAIResponse {
+    choices: Array<{
+        message: {
+            content: string;
+        };
+    }>;
+}
+
+export interface WhisperResponse {
     text: string;
 }
+
+// ----------------------------------------------------------------------
+// Utilities
+// ----------------------------------------------------------------------
+
+/**
+ * Helper to call OpenAI API with standard error handling
+ */
+export async function callOpenAI(
+    apiKey: string,
+    payload: OpenAIRequestPayload
+): Promise<{ success: boolean; data?: string; error?: string }> {
+    try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[OpenAI Service] API error:', response.status, errorText);
+            return { success: false, error: `OpenAI API error: ${response.status}` };
+        }
+
+        const data: OpenAIResponse = await response.json();
+        return { success: true, data: data.choices[0]?.message?.content };
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        console.error('[OpenAI Service] Service error:', error);
+        return { success: false, error: message };
+    }
+}
+
+/**
+ * Format brand context for AI prompts
+ */
+export function formatBrandContext(profile: BrandProfile | null): string {
+    if (!profile) return '';
+
+    const parts = [];
+    if (profile.companyName) parts.push(`Brand Name: ${profile.companyName}`);
+    if (profile.industry) parts.push(`Industry: ${profile.industry}`);
+    if (profile.targetAudience) parts.push(`Target Audience: ${profile.targetAudience}`);
+    if (profile.toneOfVoice) parts.push(`Tone of Voice: ${profile.toneOfVoice}`);
+    if (profile.keywords) parts.push(`Key Topics/Themes: ${profile.keywords}`);
+
+    if (parts.length === 0) return '';
+
+    return `\n\nBRAND CONTEXT (IMPORTANT - TAILOR OUTPUT TO THIS):\n${parts.join('\n')}`;
+}
+
+/**
+ * Parse angles from AI response
+ */
+function parseAnglesResponse(content: string): GeneratedAngle[] {
+    try {
+        const jsonMatch = content.match(/\[[\s\S]*\]/);
+        if (!jsonMatch) throw new Error('No JSON array found in response');
+
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (!Array.isArray(parsed)) throw new Error('Response is not an array');
+
+        const validTypes: AngleType[] = ['deep_dive', 'strategic_framework', 'provocative', 'tactical', 'visionary'];
+
+        return parsed.slice(0, 4).map((item: any) => ({
+            title: String(item.title || 'Untitled Angle').slice(0, 80),
+            type: (validTypes.includes(item.type) ? item.type : 'deep_dive') as AngleType,
+            description: String(item.description || 'Strategic insight for leaders').slice(0, 150),
+        }));
+    } catch (error) {
+        console.error('[OpenAI Service] Failed to parse angles:', error);
+        throw new Error('Failed to parse AI response');
+    }
+}
+
+// ----------------------------------------------------------------------
+// Core Logic
+// ----------------------------------------------------------------------
 
 /**
  * Transcribe audio using OpenAI Whisper
@@ -61,51 +159,241 @@ export async function transcribeAudio(audioBlob: Blob): Promise<string> {
 }
 
 /**
- * Generate strategic angles using OpenAI GPT-5 (via Server Action)
+ * Internal logic for generating strategic angles
  */
-export async function generateStrategicAngles(rawInput: string): Promise<GeneratedAngle[]> {
-    const apiKey = getOpenAIKey();
+export async function generateStrategicAnglesInternal(
+    apiKey: string,
+    rawInput: string,
+    brandProfile: BrandProfile | null
+): Promise<GeneratedAngle[]> {
+    const brandContext = formatBrandContext(brandProfile);
 
-    if (!apiKey) {
-        console.error('[OpenAI] No API key configured');
-        throw new Error('OpenAI API key not configured. Please check your settings.');
+    const result = await callOpenAI(apiKey, {
+        model: AI_CONFIG.openai.chatModel,
+        messages: [
+            { role: 'system', content: Prompts.STRATEGIC_ANGLES_SYSTEM_PROMPT + brandContext },
+            { role: 'user', content: Prompts.STRATEGIC_ANGLES_USER_PROMPT_TEMPLATE.replace('{INPUT}', rawInput) },
+        ],
+        max_completion_tokens: 4000,
+    });
+
+    if (!result.success || !result.data) {
+        throw new Error(result.error || 'No data returned from OpenAI');
+    }
+
+    return parseAnglesResponse(result.data);
+}
+
+/**
+ * Internal logic for generating video briefs
+ */
+export async function generateVideoBriefInternal(
+    apiKey: string,
+    angle: string,
+    brandProfile: BrandProfile | null
+): Promise<string> {
+    const brandContext = formatBrandContext(brandProfile);
+
+    const result = await callOpenAI(apiKey, {
+        model: AI_CONFIG.openai.chatModel,
+        messages: [
+            { role: 'system', content: Prompts.VIDEO_BRIEF_SYSTEM_PROMPT + brandContext },
+            { role: 'user', content: Prompts.VIDEO_BRIEF_USER_PROMPT_TEMPLATE.replace('{ANGLE}', angle) }
+        ],
+        max_completion_tokens: 1500,
+    });
+
+    if (!result.success || !result.data) {
+        return getDefaultVideoBrief(angle);
+    }
+    return result.data;
+}
+
+/**
+ * Internal logic for generating social content
+ */
+export async function generateSocialContentInternal(
+    apiKey: string,
+    angle: string,
+    mediaType: string,
+    brandProfile: BrandProfile | null
+): Promise<SocialContent> {
+    const brandContext = formatBrandContext(brandProfile);
+
+    const result = await callOpenAI(apiKey, {
+        model: AI_CONFIG.openai.chatModel,
+        messages: [
+            { role: 'system', content: Prompts.SOCIAL_CONTENT_PROMPT + brandContext },
+            { role: 'user', content: `Topic: "${angle}"\nMedia type: ${mediaType}` }
+        ],
+        max_completion_tokens: 2000,
+    });
+
+    if (!result.success || !result.data) {
+        throw new Error(result.error || 'No data returned from OpenAI');
     }
 
     try {
-        console.log('[OpenAI] Calling server action for angles...');
-        const result = await generateStrategicAnglesAction(apiKey, rawInput);
+        const cleanContent = result.data.replace(/```json\n?|\n?```/g, '');
+        const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error('No JSON found');
 
-        if (!result.success || !result.data) {
-            console.error('[OpenAI] Server action failed:', result.error);
-            throw new Error(result.error || 'Unknown error');
-        }
-
-        return result.data;
-    } catch (error) {
-        console.error('[OpenAI] Service error:', error);
-
-        throw error;
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+            caption: parsed.caption || '',
+            description: parsed.description || '',
+            hashtags: Array.isArray(parsed.hashtags) ? parsed.hashtags : [],
+        };
+    } catch (error: any) {
+        console.error('[OpenAI Service] Failed to parse social content:', error);
+        throw new Error('Failed to parse AI response');
     }
 }
 
 /**
- * Generate video brief using GPT-5 (via Server Action)
+ * Internal logic for generating image prompts
  */
-export async function generateVideoBrief(angle: string): Promise<string> {
-    const apiKey = getOpenAIKey();
+export async function generateImageGenPromptInternal(
+    apiKey: string,
+    angle: string,
+    mediaType: string,
+    brandProfile: BrandProfile | null
+): Promise<string> {
+    const brandContext = formatBrandContext(brandProfile);
 
-    if (!apiKey) {
-        return getDefaultVideoBrief(angle);
+    const promptUser = mediaType === 'infographic'
+        ? `Create a prompt for a "conceptual data visualization" or "editorial infographic" about: "${angle}".
+           Style: Avoid flat vectors or boring charts. Think "dimensional data art", "physical representation of information", "woven structures representing networks", or "macro photography of a complex physical model".
+           Focus on texture, visual hierarchy, and the "flow of ideas" rather than literal text.
+           Important: Use minimal text; focus on the visual metaphor of the data.`
+        : `Create a cinematic, realistic image generation prompt for a ${mediaType} about: "${angle}". 
+    
+           Context: A premium thought-leadership visual for an executive audience. 
+           Style: Moody, authentic, high-contrast, avoiding "corporate stock" clichés. Focus on the raw texture of the environment and the gravity of the thought.`;
+
+    const result = await callOpenAI(apiKey, {
+        model: AI_CONFIG.openai.chatModel,
+        messages: [
+            { role: 'system', content: Prompts.IMAGE_PROMPT_SYSTEM_PROMPT + brandContext },
+            { role: 'user', content: promptUser }
+        ],
+        max_completion_tokens: 500,
+    });
+
+    if (!result.success || !result.data) {
+        throw new Error(result.error || 'No data returned from OpenAI');
+    }
+    return result.data;
+}
+
+/**
+ * Internal logic for generating carousel prompts
+ */
+export async function generateCarouselPromptsInternal(
+    apiKey: string,
+    angle: string,
+    brandProfile: BrandProfile | null
+): Promise<string[]> {
+    const brandContext = formatBrandContext(brandProfile);
+
+    const result = await callOpenAI(apiKey, {
+        model: AI_CONFIG.openai.chatModel,
+        messages: [
+            { role: 'system', content: Prompts.IMAGE_PROMPT_SYSTEM_PROMPT + brandContext },
+            { role: 'user', content: Prompts.CAROUSEL_PROMPT_TEMPLATE.replace('{ANGLE}', angle) }
+        ],
+        max_completion_tokens: 1000,
+    });
+
+    if (!result.success || !result.data) {
+        throw new Error(result.error || 'No data returned from OpenAI');
     }
 
     try {
-        const result = await generateVideoBriefAction(apiKey, angle);
-        if (!result.success || !result.data) {
-            return getDefaultVideoBrief(angle);
+        const cleanContent = result.data.replace(/```json\n?|\n?```/g, '');
+        const prompts = JSON.parse(cleanContent);
+        if (!Array.isArray(prompts) || prompts.length === 0) {
+            throw new Error('Failed to parse prompts array');
         }
-        return result.data;
+        return prompts.slice(0, 3);
+    } catch (error: any) {
+        console.error('[OpenAI Service] Failed to parse carousel prompts:', error);
+        throw new Error('Failed to parse AI response');
+    }
+}
+
+// ----------------------------------------------------------------------
+// Wrappers (Used by Client)
+// ----------------------------------------------------------------------
+
+/**
+ * These wrappers call server actions to ensure API keys remain secure.
+ */
+
+export async function generateStrategicAngles(rawInput: string): Promise<GeneratedAngle[]> {
+    const { generateStrategicAnglesAction } = await import('@/actions/openai');
+    const apiKey = getOpenAIKey();
+    if (!apiKey) throw new Error('OpenAI API key not configured');
+
+    const result = await generateStrategicAnglesAction(apiKey, rawInput);
+    if (!result.success || !result.data) throw new Error(result.error || 'Request failed');
+    return result.data;
+}
+
+export async function generateVideoBrief(angle: string): Promise<string> {
+    const { generateVideoBriefAction } = await import('@/actions/openai');
+    const apiKey = getOpenAIKey();
+    if (!apiKey) return getDefaultVideoBrief(angle);
+
+    const result = await generateVideoBriefAction(apiKey, angle);
+    return result.success && result.data ? result.data : getDefaultVideoBrief(angle);
+}
+
+export async function generateSocialContent(angle: string, mediaType: string): Promise<SocialContent> {
+    const { generateSocialContentAction } = await import('@/actions/openai');
+    const apiKey = getOpenAIKey();
+
+    const defaultContent: SocialContent = {
+        caption: `💡 ${angle}\n\nThe best leaders know that real impact comes from sharing insights that matter.\n\n💬 What's your take? Share your thoughts below!`,
+        description: 'Leadership insights for professionals.',
+        hashtags: ['#Leadership', '#ThoughtLeadership', '#BusinessStrategy', '#ExecutiveInsights'],
+    };
+
+    if (!apiKey) return defaultContent;
+
+    try {
+        const result = await generateSocialContentAction(apiKey, angle, mediaType);
+        return result.success && result.data ? result.data : defaultContent;
     } catch {
-        return getDefaultVideoBrief(angle);
+        return defaultContent;
+    }
+}
+
+export async function generateImageGenPrompt(angle: string, mediaType: string): Promise<string> {
+    const { generateImageGenPromptAction } = await import('@/actions/openai');
+    const apiKey = getOpenAIKey();
+
+    const defaultPrompt = `Professional business visual about "${angle}". Dark gradient background, cyan accents, modern minimalist style. High quality, 4k.`;
+    if (!apiKey) return defaultPrompt;
+
+    try {
+        const result = await generateImageGenPromptAction(apiKey, angle, mediaType);
+        return result.success && result.data ? result.data : defaultPrompt;
+    } catch {
+        return defaultPrompt;
+    }
+}
+
+export async function generateCarouselPrompts(angle: string): Promise<string[]> {
+    const { generateCarouselPromptsAction } = await import('@/actions/openai');
+    const apiKey = getOpenAIKey();
+    if (!apiKey) return [];
+
+    try {
+        const result = await generateCarouselPromptsAction(apiKey, angle);
+        return result.success && result.data ? result.data : [];
+    } catch {
+        return [];
     }
 }
 
@@ -147,139 +435,20 @@ ${angle}
 `;
 }
 
-/**
- * Test OpenAI API connection
- * (Client-side test, susceptible to CORS if checking models endpoint directly. 
- *  We might want to move this too, but leaving for now as user didn't complain about test)
- */
 export async function testOpenAIConnection(): Promise<{ success: boolean; message: string }> {
     const apiKey = getOpenAIKey();
-
-    if (!apiKey) {
-        return { success: false, message: 'No API key configured' };
-    }
+    if (!apiKey) return { success: false, message: 'No API key configured' };
 
     try {
-        // Simple client-side check. If CORS fails here too, we should move it.
-        // Assuming models endpoint might be CORS restricted too.
-        // Let's try calling a simple server action instead if this fails? 
-        // For now, leaving as is to minimize changes scope, but noting it.
         const response = await fetch('https://api.openai.com/v1/models', {
             method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${apiKey}`,
-            },
+            headers: { 'Authorization': `Bearer ${apiKey}` },
         });
 
-        if (response.ok) {
-            return { success: true, message: 'Connected successfully' };
-        } else {
-            const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
-            return { success: false, message: error.error?.message || `Error: ${response.status}` };
-        }
+        if (response.ok) return { success: true, message: 'Connected successfully' };
+        const error = await response.json().catch(() => ({ error: { message: 'Unknown error' } }));
+        return { success: false, message: error.error?.message || `Error: ${response.status}` };
     } catch (error) {
         return { success: false, message: `Connection failed: ${error instanceof Error ? error.message : 'Unknown error'}` };
-    }
-}
-
-/**
- * Generate social media content (caption, description, hashtags) using GPT-5 (via Server Action)
- */
-export interface SocialContent {
-    caption: string;
-    description: string;
-    hashtags: string[];
-}
-
-export async function generateSocialContent(
-    angle: string,
-    mediaType: string
-): Promise<SocialContent> {
-    const apiKey = getOpenAIKey();
-
-    // Default fallback content
-    const defaultContent: SocialContent = {
-        caption: `💡 ${angle}\n\nThe best leaders know that real impact comes from sharing insights that matter.\n\n💬 What's your take? Share your thoughts below!`,
-        description: 'Leadership insights for professionals.',
-        hashtags: ['#Leadership', '#ThoughtLeadership', '#BusinessStrategy', '#ExecutiveInsights'],
-    };
-
-    if (!apiKey) {
-        console.log('[OpenAI] No API key, using default content');
-        return defaultContent;
-    }
-
-    try {
-        const result = await generateSocialContentAction(apiKey, angle, mediaType);
-
-        if (!result.success || !result.data) {
-            console.error('[OpenAI] Social content action failed:', result.error);
-            return defaultContent;
-        }
-
-        return result.data;
-    } catch (error) {
-        console.error('[OpenAI] Error generating social content:', error);
-        return defaultContent;
-    }
-}
-
-/**
- * Generate a high-quality image prompt using GPT-5 (via Server Action)
- */
-export async function generateImageGenPrompt(
-    angle: string,
-    mediaType: string
-): Promise<string> {
-    const apiKey = getOpenAIKey();
-
-    // Default fallback prompt if no API key
-    const defaultPrompt = `Professional business visual about "${angle}". Dark gradient background, cyan accents, modern minimalist style. High quality, 4k.`;
-
-    if (!apiKey) {
-        console.log('[OpenAI] No API key, using default image prompt');
-        return defaultPrompt;
-    }
-
-    try {
-        const result = await generateImageGenPromptAction(apiKey, angle, mediaType);
-        console.log('[OpenAI Client] generateImageGenPromptAction result:', result);
-
-        if (!result.success || !result.data) {
-            console.error('[OpenAI] Image prompt action failed:', result.error || 'Empty data returned');
-            return defaultPrompt;
-        }
-
-        return result.data;
-
-    } catch (error) {
-        console.error('[OpenAI] Error generating image prompt:', error);
-        return defaultPrompt;
-    }
-}
-
-/**
- * Generate 3 distinct prompts for carousel slides (via Server Action)
- */
-export async function generateCarouselPrompts(angle: string): Promise<string[]> {
-    const apiKey = getOpenAIKey();
-
-    // Fallback: just return empty array so logic can fall back to single prompt repetition if needed, 
-    // or return default prompts.
-    if (!apiKey) return [];
-
-    try {
-        const { generateCarouselPromptsAction } = await import('@/actions/openai');
-        const result = await generateCarouselPromptsAction(apiKey, angle);
-
-        if (!result.success || !result.data) {
-            console.error('[OpenAI] Carousel prompts action failed:', result.error);
-            return [];
-        }
-
-        return result.data;
-    } catch (error) {
-        console.error('[OpenAI] Error generating carousel prompts:', error);
-        return [];
     }
 }

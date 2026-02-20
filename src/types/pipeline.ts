@@ -13,6 +13,12 @@ export type MediaType = 'infographic' | 'carousel' | 'image' | 'video';
 
 export type AngleType = 'deep_dive' | 'strategic_framework' | 'provocative' | 'tactical' | 'visionary';
 
+export interface SocialContent {
+    caption: string;
+    description: string;
+    hashtags: string[];
+}
+
 export interface GeneratedAngle {
     title: string;
     type: AngleType;

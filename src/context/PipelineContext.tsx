@@ -148,7 +148,7 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
             // In a production app, this would call a real content verification or platform-specific check
             // For now, we move directly to scheduling stage with default platforms
             const socialPost = {
-                platforms: ['linkedin', 'twitter', 'instagram'],
+                platforms: ['linkedin', 'x', 'instagram'],
                 scheduledTime: new Date(Date.now() + 3600000), // Default 1 hour delay
             };
 

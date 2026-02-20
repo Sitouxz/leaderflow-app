@@ -14,14 +14,14 @@ interface SchedulingScreenProps {
 
 const PLATFORMS = [
     { id: 'linkedin', label: 'LinkedIn', icon: 'work' },
-    { id: 'twitter', label: 'Twitter/X', icon: 'tag' },
+    { id: 'x', label: 'X (Twitter)', icon: 'tag' },
     { id: 'instagram', label: 'Instagram', icon: 'photo_camera' },
     { id: 'facebook', label: 'Facebook', icon: 'groups' },
 ];
 
 export default function SchedulingScreen({ item, onConfirm, onBack, onUpdateSchedule }: SchedulingScreenProps) {
     const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(
-        item.socialPost?.platforms || ['linkedin', 'twitter']
+        item.socialPost?.platforms || ['linkedin', 'x']
     );
     const [isEditingSchedule, setIsEditingSchedule] = useState(false);
     const [editDate, setEditDate] = useState<Date | null>(null);

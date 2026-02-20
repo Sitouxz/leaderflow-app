@@ -44,7 +44,7 @@ export default function SocialAccountsPanel({ onBack }: { onBack: () => void }) 
     };
 
     const platforms = [
-        { id: 'twitter', name: 'X (Twitter)', icon: 'brand_family', description: 'Post updates and threads to your X profile.' },
+        { id: 'x', name: 'X (Twitter)', icon: 'brand_family', description: 'Post updates and threads to your X profile.' },
         { id: 'linkedin', name: 'LinkedIn', icon: 'share', description: 'Share professional insights and articles.' },
         { id: 'instagram', name: 'Instagram', icon: 'photo_camera', description: 'Post photos and reels to your Feed.' }
     ];
