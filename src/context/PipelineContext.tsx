@@ -1,9 +1,10 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { PipelineItem, PipelineStatus, MediaType } from '@/types/pipeline';
 import { generateStrategicAngles } from '@/services/openaiService';
 import { generateMediaContent, regenerateWithFeedback } from '@/services/geminiService';
+import { schedulePostAction, getScheduledPostsAction } from '@/actions/socialActions';
 // Social generation is now handled within scheduling flow or via real actions if ready
 // but keeping the call structure generic.
 
@@ -39,6 +40,38 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
     const [items, setItems] = useState<PipelineItem[]>([]);
     const [currentItem, setCurrentItem] = useState<PipelineItem | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+
+    // Initial fetch from DB
+    useEffect(() => {
+        const fetchPosts = async () => {
+            setIsLoading(true);
+            try {
+                const result = await getScheduledPostsAction();
+                if (result.success && result.data) {
+                    const dbItems: PipelineItem[] = result.data.map((post: any) => ({
+                        id: post.id,
+                        rawInput: 'Imported from database', // Raw input isn't stored in DB currently
+                        status: 'scheduled' as PipelineStatus,
+                        createdAt: new Date(post.createdAt),
+                        selectedAngle: post.content.title || 'Imported Post',
+                        selectedMediaType: post.content.type as MediaType,
+                        mediaContent: post.content,
+                        socialPost: {
+                            platforms: post.platforms,
+                            scheduledTime: new Date(post.scheduledTime)
+                        }
+                    }));
+                    setItems(dbItems);
+                }
+            } catch (error) {
+                console.error('Failed to initial fetch posts:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchPosts();
+    }, []);
 
     // Helper to update item
     const updateItem = (itemId: string, updates: Partial<PipelineItem>) => {
@@ -168,9 +201,30 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
         });
     }, []);
 
-    const confirmPost = useCallback((itemId: string) => {
-        updateItem(itemId, { status: 'scheduled' as PipelineStatus });
-    }, []);
+    const confirmPost = useCallback(async (itemId: string) => {
+        const item = items.find(i => i.id === itemId);
+        if (!item?.mediaContent || !item?.socialPost) return;
+
+        setIsLoading(true);
+        try {
+            const result = await schedulePostAction(
+                item.mediaContent,
+                item.socialPost.platforms,
+                item.socialPost.scheduledTime
+            );
+
+            if (result.success) {
+                updateItem(itemId, { status: 'scheduled' as PipelineStatus });
+            } else {
+                console.error('Failed to persist post:', result.error);
+                alert('Failed to schedule post in database: ' + result.error);
+            }
+        } catch (error) {
+            console.error('Error in confirmPost:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [items]);
 
     return (
         <PipelineContext.Provider

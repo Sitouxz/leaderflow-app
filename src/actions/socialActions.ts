@@ -2,7 +2,7 @@
 
 import { getBrandProfile } from '@/services/brandService';
 import { MediaContent } from '@/types/pipeline';
-import { saveScheduledPost } from '@/lib/scheduler/storage';
+import { saveScheduledPost, getScheduledPosts } from '@/lib/scheduler/storage';
 import { UploadPostService } from '@/lib/scheduler/uploadPostService';
 
 export async function schedulePostAction(
@@ -56,5 +56,14 @@ export async function schedulePostAction(
     } catch (error: any) {
         console.error('Schedule Action Error:', error);
         return { success: false, error: error.message || 'Failed to schedule post' };
+    }
+}
+export async function getScheduledPostsAction(): Promise<{ success: boolean; error?: string; data?: any }> {
+    try {
+        const posts = await getScheduledPosts();
+        return { success: true, data: posts };
+    } catch (error: any) {
+        console.error('Get Scheduled Posts Action Error:', error);
+        return { success: false, error: error.message || 'Failed to fetch posts' };
     }
 }
