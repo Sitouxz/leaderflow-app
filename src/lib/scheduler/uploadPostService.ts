@@ -398,7 +398,7 @@ export class UploadPostService {
         });
     }
 
-    private async retry<T>(fn: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
+    private async retry<T>(fn: () => Promise<T>, retries = 3, delay = process.env.NODE_ENV === 'test' ? 0 : 1000): Promise<T> {
         try {
             return await fn();
         } catch (error: any) {
@@ -407,7 +407,7 @@ export class UploadPostService {
                 throw error;
             }
             console.warn(`Retrying operation... attempts left: ${retries}. Error: ${error.message}`);
-            await new Promise(resolve => setTimeout(resolve, delay));
+            if (delay > 0) await new Promise(resolve => setTimeout(resolve, delay));
             return this.retry(fn, retries - 1, delay * 2);
         }
     }

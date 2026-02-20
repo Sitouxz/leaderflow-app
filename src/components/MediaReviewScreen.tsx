@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { PipelineItem, MEDIA_TYPE_CONFIG } from '@/types/pipeline';
 import { usePipeline } from '@/context/PipelineContext';
 import { useToast } from '@/context/ToastContext';
+import SocialPreview from './dashboard/SocialPreview';
 
 interface MediaReviewScreenProps {
     item: PipelineItem;
@@ -146,12 +147,13 @@ export default function MediaReviewScreen({
                 {/* Preview Tab */}
                 {activeTab === 'preview' && (
                     <div className="space-y-4">
-                        <div className="rounded-2xl overflow-hidden bg-surface-dark relative group ring-1 ring-white/5">
-                            <img src={currentImage} alt={config?.label} className="w-full aspect-video object-cover transition-opacity duration-300" />
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                                <span className="text-white/80 text-sm font-medium">Visual Preview</span>
-                            </div>
-                        </div>
+                        <SocialPreview
+                            type={isVideo ? 'video' : 'image'}
+                            mediaUrl={currentImage}
+                            caption={content.caption}
+                            hashtags={content.hashtags}
+                            platforms={item.socialPost?.platforms || ['linkedin', 'x', 'instagram']}
+                        />
                         {content.previewUrls && content.previewUrls.length > 1 && (
                             <div className="flex gap-2 overflow-x-auto p-2 scrollbar-hide">
                                 {content.previewUrls.map((url, i) => {

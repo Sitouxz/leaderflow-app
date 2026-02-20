@@ -170,3 +170,19 @@ body {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.1) var(--color-surface-dark);
 }
+
+@layer utilities {
+  .glass-surface {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .glass-border {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .premium-gradient {
+    background: linear-gradient(135deg, rgba(0, 234, 255, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
+  }
+}

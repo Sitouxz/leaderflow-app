@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { usePipeline } from '@/context/PipelineContext';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
@@ -76,17 +77,17 @@ export default function Dashboard() {
                 <main className="flex-1 flex flex-col w-full max-w-md mx-auto px-6 relative z-10 overflow-auto">
                     <h2 className="text-white text-2xl font-bold mt-4 mb-6">Settings</h2>
                     <div className="space-y-4">
-                        <div className="bg-surface-dark border border-white/5 rounded-2xl p-5">
+                        <div className="glass-surface glass-border rounded-2xl p-5">
                             <h3 className="text-white font-semibold mb-4">AI & Integrations</h3>
                             <div className="space-y-3">
-                                <button onClick={() => { setShowSettings(false); setShowAISettings(true); }} className="w-full flex items-center justify-between py-3 text-white/70 hover:text-white transition-colors">
+                                <button onClick={() => { setShowSettings(false); setShowAISettings(true); }} className="w-full h-14 flex items-center justify-between px-4 glass-surface glass-border rounded-xl text-white/70 hover:text-white transition-all hover:scale-[1.02] active:scale-[0.98]">
                                     <div className="flex items-center gap-3">
                                         <span className="material-symbols-outlined text-primary" style={{ fontSize: '20px' }}>auto_awesome</span>
                                         <span>AI Configuration</span>
                                     </div>
                                     <span className="material-symbols-outlined text-white/40" style={{ fontSize: '18px' }}>chevron_right</span>
                                 </button>
-                                <button onClick={() => { setShowSettings(false); setShowBrandSettings(true); }} className="w-full flex items-center justify-between py-3 text-white/70 hover:text-white transition-colors">
+                                <button onClick={() => { setShowSettings(false); setShowBrandSettings(true); }} className="w-full h-14 flex items-center justify-between px-4 glass-surface glass-border rounded-xl text-white/70 hover:text-white transition-all hover:scale-[1.02] active:scale-[0.98]">
                                     <div className="flex items-center gap-3">
                                         <span className="material-symbols-outlined text-indigo-400" style={{ fontSize: '20px' }}>psychology</span>
                                         <span>Brand Context</span>
@@ -145,7 +146,18 @@ export default function Dashboard() {
             <BackgroundGradients />
             <Header onSettingsClick={() => setShowSettings(true)} />
             <main className="flex-1 flex flex-col w-full max-w-md mx-auto px-6 relative z-10 overflow-hidden">
-                {renderContent()}
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={currentItem?.id || activeTab + (showSettings ? '-settings' : '')}
+                        initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.98, y: -10 }}
+                        transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+                        className="flex-1 flex flex-col overflow-hidden"
+                    >
+                        {renderContent()}
+                    </motion.div>
+                </AnimatePresence>
             </main>
             <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
             <CaptureModal isOpen={showCaptureModal} onClose={() => setShowCaptureModal(false)} onSubmit={handleCaptureSubmit} isLoading={isLoading} />

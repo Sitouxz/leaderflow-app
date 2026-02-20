@@ -1,38 +1,46 @@
 
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { UploadPostService } from './uploadPostService';
 
 // Mock global fetch and FormData
-global.fetch = jest.fn();
+global.fetch = vi.fn(() =>
+    Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({}),
+        status: 200,
+        statusText: 'OK'
+    } as Response)
+);
 global.FormData = class FormData {
-    constructor() {
-        this.data = new Map();
-    }
-    append(key, value) {
+    private data = new Map<string, any>();
+    append(key: string, value: any) {
         this.data.set(key, value);
     }
-    get(key) {
+    get(key: string) {
         return this.data.get(key);
     }
-};
+} as any;
 
 describe('UploadPostService', () => {
-    let service;
+    let service: any;
     const mockApiKey = 'test-api-key';
 
     beforeEach(() => {
         service = new UploadPostService({ apiKey: mockApiKey, username: 'test-user' });
-        jest.clearAllMocks();
+        vi.clearAllMocks();
     });
 
     it('should upload valid base64 file successfully using files[] field', async () => {
         const mockResponse = { success: true, job_id: 'job-123' };
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
-            ok: true,
-            json: async () => mockResponse
-        });
+
+        // Setup sequential mocks
+        (global.fetch as any).mockReset();
+        (global.fetch as any)
+            .mockResolvedValueOnce({ ok: true, json: async () => ({}) }) // Profile check
+            .mockResolvedValueOnce({ ok: true, json: async () => mockResponse }); // Upload
 
         // Mock resolveFile to return a blob
-        jest.spyOn(service as any, 'resolveFile').mockResolvedValue(new Blob(['test'], { type: 'image/png' }));
+        vi.spyOn(service as any, 'resolveFile').mockResolvedValue(new Blob(['test'], { type: 'image/png' }));
 
         const content = {
             type: 'image',
@@ -54,20 +62,20 @@ describe('UploadPostService', () => {
     });
 
     it('should retry with URL upload on 400 "Photo files or URLs are required" error', async () => {
-        // First call fails
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
-            ok: false,
-            status: 400,
-            json: async () => ({ error: 'Photo files or URLs are required' })
-        });
+        (global.fetch as any).mockReset();
+        (global.fetch as any)
+            .mockResolvedValueOnce({ ok: true, json: async () => ({}) }) // Profile check
+            .mockResolvedValueOnce({ // Upload fails
+                ok: false,
+                status: 400,
+                json: async () => ({ error: 'Photo files or URLs are required' })
+            })
+            .mockResolvedValueOnce({ // Retry succeeds
+                ok: true,
+                json: async () => ({ success: true, job_id: 'job-retry' })
+            });
 
-        // Second call (retry) succeeds
-        (global.fetch as jest.Mock).mockResolvedValueOnce({
-            ok: true,
-            json: async () => ({ success: true, job_id: 'job-retry' })
-        });
-
-        jest.spyOn(service as any, 'resolveFile').mockResolvedValue(new Blob(['test'], { type: 'image/png' }));
+        vi.spyOn(service as any, 'resolveFile').mockResolvedValue(new Blob(['test'], { type: 'image/png' }));
 
         const content = {
             type: 'image',
@@ -79,11 +87,14 @@ describe('UploadPostService', () => {
         const result = await service.createScheduledPost(content, ['twitter'], new Date());
 
         expect(result.success).toBe(true);
-        expect(global.fetch).toHaveBeenCalledTimes(2);
+        expect(result.job_id).toBe('job-retry');
+        expect(global.fetch).toHaveBeenCalledTimes(3);
     });
 
     it('should throw error if file is missing and cannot fallback', async () => {
-        jest.spyOn(service as any, 'resolveFile').mockResolvedValue(new Blob([], { type: '' }));
+        (global.fetch as any).mockReset();
+        (global.fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({}) }); // Profile check
+        vi.spyOn(service as any, 'resolveFile').mockResolvedValue(new Blob([], { type: '' }));
 
         const content = {
             type: 'image',
