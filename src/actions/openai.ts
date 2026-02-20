@@ -92,18 +92,17 @@ Generate content with these fields (respond in JSON format only):
 
 Only respond with valid JSON, no additional text.`;
 
-const IMAGE_PROMPT_SYSTEM_PROMPT = `You are a world-class AI art director and prompt engineer. 
-Your goal is to write "cutting edge", highly detailed, and realistic prompts for an image generation model (like Gemini/Imagen 3).
+const IMAGE_PROMPT_SYSTEM_PROMPT = `You are a world-class AI art director and cinematic photographer.
+Your goal is to write evocative, sophisticated, and authentic prompts for a high-end image generation model.
 
-Follow these principles for the prompt:
-1. **Premium Aesthetic**: Use keywords like "editorial photography", "cinematic lighting", "8k resolution", "sharp focus", "hyper-realistic", "depth of field".
-2. **Lighting**: Specify lighting (e.g., "volumetric lighting", "rembrandt lighting", "soft studio lighting", "golden hour").
-3. **Color**: Define a sophisticated palette (e.g., "deep midnight navy", "champagne gold accents", "cool cyan highlights"). Avoid muddy or oversaturated colors.
-4. **Composition**: "Rule of thirds", "centered composition", or "dynamic angle".
-6. **No Text**: Explicitly state "no text", "no typography", "clean visual" unless the user prompt specifically asks for an infographic or data visualization.
-7. **Subject**: Abstract representations of business concepts, professionals in modern settings, or high-tech visualizations.
+Follow these principles:
+1. **Authentic Cinematography**: Avoid "AI-perfect" looks. Use keywords like "editorial photography", "shot on 35mm film", "analogue warmth", "natural textures", "documentary style", "slight grain", "handheld camera aesthetic".
+2. **Masterful Lighting**: Focus on natural or purposeful lighting (e.g., "dappled sunlight through windows", "intentional shadows", "low-key lighting", "soft atmospheric haze"). No generic "glow".
+3. **Curation over Cliché**: Avoid shiny blue/cyan tech defaults. Use sophisticated palettes like "muted earth tones", "deep indigo and slate", "warm cedar and brushed steel", "desaturated professional hues".
+4. **Human Complexity**: For subjects, aim for "candid moments", "focused intensity", or "thoughtful Pause". Environments should feel lived-in and real.
+5. **No Text**: Strictly "no text", "no labels", "clean visual" unless the specific request is for a conceptual data visualization.
 
-Format the output as a single, potent paragraph of text that can be pasted directly into the image generator. Do not include labels like "Prompt:" or quotation marks.`;
+Format as a single, potent, sensory-rich paragraph. Do not use labels or quotation marks.`;
 
 import { BrandProfile } from '@prisma/client';
 
@@ -288,18 +287,14 @@ export async function generateImageGenPromptAction(
     const brandContext = formatBrandContext(brandProfile);
 
     const promptUser = mediaType === 'infographic'
-        ? `Create a prompt for a professional infographic about: "${angle}".
-           Context: LinkedIn/Instagram thought leadership.
-           Style: A clean, structured infographic.
-           Important: For this specific request, clear, readable headers or large numbers ARE allowed if they are central to the design, but prefer abstract representations of data (charts, nodes, flows). 
-           Focus on "layout", "flow", "connection", and "visual hierarchy".
-           Output ONLY the prompt text.`
-        : `Create a high-end, realistic image generation prompt for a ${mediaType} about: "${angle}". 
+        ? `Create a prompt for a "conceptual data visualization" or "editorial infographic" about: "${angle}".
+           Style: Avoid flat vectors or boring charts. Think "dimensional data art", "physical representation of information", "woven structures representing networks", or "macro photography of a complex physical model".
+           Focus on texture, visual hierarchy, and the "flow of ideas" rather than literal text.
+           Important: Use minimal text; focus on the visual metaphor of the data.`
+        : `Create a cinematic, realistic image generation prompt for a ${mediaType} about: "${angle}". 
     
-           Context: The image is for a professional LinkedIn/Instagram thought leadership post. 
-           Style: Dark, premium, tech-forward but human.
-           
-           Output ONLY the prompt text.`;
+           Context: A premium thought-leadership visual for an executive audience. 
+           Style: Moody, authentic, high-contrast, avoiding "corporate stock" clichés. Focus on the raw texture of the environment and the gravity of the thought.`;
 
     const result = await callOpenAI(apiKey, {
         model: AI_CONFIG.openai.chatModel,
@@ -327,19 +322,19 @@ export async function generateCarouselPromptsAction(
             { role: 'system', content: IMAGE_PROMPT_SYSTEM_PROMPT + brandContext },
             {
                 role: 'user',
-                content: `Create 3 distinct, sequential image generation prompts for a LinkedIn carousel about: "${angle}".
+                content: `Create 3 distinct, sequential image generation prompts for a visual narrative about: "${angle}".
 
-                Structure the 3 slides as a visual story:
-                1. Slide 1 (Hook): A striking, high-impact metaphorical image introducing the concept.
-                2. Slide 2 (Insight): A detailed, complex visual representing the core analysis or friction.
-                3. Slide 3 (Solution): A forward-looking, inspiring visual representing the resolution or future state.
+                Sequence:
+                1. Slide 1 (The Hook): A visceral, high-impact metaphor. Something that stops the scroll through sheer creative unexpectedness.
+                2. Slide 2 (The Friction): A detailed, textured visual representing complexity, struggle, or the "hidden depth" of the problem. Use strong lighting and shadows.
+                3. Slide 3 (The Horizon): A clear, inspiring, yet grounded visual representing the "unlocked future". Focus on clarity, open space, and authentic human resolution.
 
-                Style Requirements:
-                - Maintain a cohesive "cinematic, premium, photorealistic" style across all 3.
-                - strictly NO TEXT in the images.
+                Aesthetic: 
+                - Photorealistic but cinematic. 
+                - Strictly NO TEXT.
+                - Cohesive visual language across all three.
                 
-                Output strictly as a JSON array of strings:
-                ["prompt 1", "prompt 2", "prompt 3"]`
+                Respond ONLY with a JSON array of strings: ["prompt 1", "prompt 2", "prompt 3"]`
             }
         ],
         max_completion_tokens: 1000,
