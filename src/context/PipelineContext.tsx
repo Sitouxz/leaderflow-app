@@ -87,7 +87,7 @@ Here's what I've learned after years of building and scaling teams - and why I b
                 platforms: ['linkedin', 'twitter'],
                 scheduledTime: new Date(Date.now() + 3600000),
             },
-            status: 'posted',
+            status: 'scheduled',
             createdAt: new Date(Date.now() - 86400000),
         },
     ]);
@@ -222,7 +222,7 @@ Here's what I've learned after years of building and scaling teams - and why I b
 
     // Stage 3: Confirm and post
     const confirmPost = useCallback((itemId: string) => {
-        updateItem(itemId, { status: 'posted' as PipelineStatus });
+        updateItem(itemId, { status: 'scheduled' as PipelineStatus });
         setCurrentItem(null);
     }, []);
 

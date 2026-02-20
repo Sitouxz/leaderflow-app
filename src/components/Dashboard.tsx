@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePipeline } from '@/context/PipelineContext';
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
@@ -13,6 +13,8 @@ import MediaTypeScreen from '@/components/MediaTypeScreen';
 import MediaReviewScreen from '@/components/MediaReviewScreen';
 import SchedulingScreen from '@/components/SchedulingScreen';
 import AISettingsPanel from '@/components/AISettingsPanel';
+import BrandSettingsPanel from '@/components/BrandSettingsPanel';
+import SocialAccountsPanel from '@/components/SocialAccountsPanel';
 
 type NavTab = 'capture' | 'library' | 'cognition';
 
@@ -35,10 +37,22 @@ export default function Dashboard() {
     const [showCaptureModal, setShowCaptureModal] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
     const [showAISettings, setShowAISettings] = useState(false);
+    const [showBrandSettings, setShowBrandSettings] = useState(false);
+    const [showSocialSettings, setShowSocialSettings] = useState(false);
     const [activeTab, setActiveTab] = useState<NavTab>('capture');
 
-    const liveCount = items.filter(item => item.status !== 'posted').length;
-    const postedItems = items.filter(item => item.status === 'posted');
+    // Handle OAuth Redirect auto-open
+    useEffect(() => {
+        const url = new URL(window.location.href);
+        if (url.searchParams.get('settings') === 'social') {
+            setShowSocialSettings(true);
+            // Clean up URL
+            window.history.replaceState({}, '', '/');
+        }
+    }, []);
+
+    const liveCount = items.filter(item => item.status !== 'scheduled').length;
+    const scheduledItems = items.filter(item => item.status === 'scheduled');
 
     const handleCaptureSubmit = async (text: string) => {
         setShowCaptureModal(false);
@@ -58,6 +72,32 @@ export default function Dashboard() {
                     <AISettingsPanel onBack={() => setShowAISettings(false)} />
                 </main>
                 <BottomNav activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); setShowAISettings(false); }} />
+            </div>
+        );
+    }
+
+    // Brand Settings Screen
+    if (showBrandSettings) {
+        return (
+            <div className="flex flex-col h-full w-full overflow-hidden">
+                <BackgroundGradients />
+                <main className="flex-1 flex flex-col w-full max-w-md mx-auto px-6 py-4 relative z-10 overflow-hidden">
+                    <BrandSettingsPanel onBack={() => setShowBrandSettings(false)} />
+                </main>
+                <BottomNav activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); setShowBrandSettings(false); }} />
+            </div>
+        );
+    }
+
+    // Social Settings Screen
+    if (showSocialSettings) {
+        return (
+            <div className="flex flex-col h-full w-full overflow-hidden">
+                <BackgroundGradients />
+                <main className="flex-1 flex flex-col w-full max-w-md mx-auto px-6 py-4 relative z-10 overflow-hidden">
+                    <SocialAccountsPanel onBack={() => setShowSocialSettings(false)} />
+                </main>
+                <BottomNav activeTab={activeTab} onTabChange={(tab) => { setActiveTab(tab); setShowSocialSettings(false); }} />
             </div>
         );
     }
@@ -95,12 +135,27 @@ export default function Dashboard() {
                                     </div>
                                     <span className="material-symbols-outlined text-white/40" style={{ fontSize: '18px' }}>chevron_right</span>
                                 </button>
-                                <button className="w-full flex items-center justify-between py-3 text-white/70 hover:text-white transition-colors">
+
+                                <button
+                                    onClick={() => { setShowSettings(false); setShowBrandSettings(true); }}
+                                    className="w-full flex items-center justify-between py-3 text-white/70 hover:text-white transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <span className="material-symbols-outlined text-indigo-400" style={{ fontSize: '20px' }}>psychology</span>
+                                        <span>Brand Context</span>
+                                    </div>
+                                    <span className="material-symbols-outlined text-white/40" style={{ fontSize: '18px' }}>chevron_right</span>
+                                </button>
+
+                                <button
+                                    onClick={() => { setShowSettings(false); setShowSocialSettings(true); }}
+                                    className="w-full flex items-center justify-between py-3 text-white/70 hover:text-white transition-colors"
+                                >
                                     <div className="flex items-center gap-3">
                                         <span className="material-symbols-outlined text-emerald-500" style={{ fontSize: '20px' }}>link</span>
                                         <span>Connected Accounts</span>
                                     </div>
-                                    <span className="text-emerald-500 text-xs">4 Active</span>
+                                    <span className="material-symbols-outlined text-white/40" style={{ fontSize: '18px' }}>chevron_right</span>
                                 </button>
                             </div>
                         </div>
@@ -191,7 +246,7 @@ export default function Dashboard() {
         }
 
         // Posted - Success View
-        if (currentItem.status === 'posted') {
+        if (currentItem.status === 'scheduled') {
             return (
                 <div className="flex flex-col h-full w-full overflow-hidden">
                     <BackgroundGradients />
@@ -238,16 +293,16 @@ export default function Dashboard() {
                     <div className="flex flex-col gap-6 mt-4">
                         <div className="flex items-end justify-between border-b border-white/10 pb-4">
                             <h2 className="text-white text-2xl font-bold tracking-tight">Content Library</h2>
-                            <span className="text-primary text-sm font-medium mb-1">{postedItems.length} Posts</span>
+                            <span className="text-primary text-sm font-medium mb-1">{scheduledItems.length} Posts</span>
                         </div>
-                        {postedItems.length === 0 ? (
+                        {scheduledItems.length === 0 ? (
                             <div className="text-center py-12">
                                 <span className="material-symbols-outlined text-white/20 mb-4" style={{ fontSize: '48px' }}>folder_open</span>
                                 <p className="text-white/40">No published content yet</p>
                             </div>
                         ) : (
                             <div className="flex flex-col gap-4">
-                                {postedItems.map(item => (
+                                {scheduledItems.map(item => (
                                     <div key={item.id} onClick={() => handleCardClick(item)} className="bg-surface-dark border border-white/5 rounded-2xl overflow-hidden cursor-pointer hover:border-white/10 transition-all active:scale-[0.98]">
                                         {item.mediaContent && <img src={item.mediaContent.imageUrl} alt="" className="w-full h-32 object-cover" />}
                                         <div className="p-4">
@@ -288,7 +343,7 @@ export default function Dashboard() {
                             </div>
                             <div className="bg-surface-dark border border-white/5 rounded-2xl p-5">
                                 <span className="material-symbols-outlined text-emerald-500 mb-2" style={{ fontSize: '24px' }}>check_circle</span>
-                                <p className="text-white text-2xl font-bold">{postedItems.length}</p>
+                                <p className="text-white text-2xl font-bold">{scheduledItems.length}</p>
                                 <p className="text-white/50 text-xs mt-1">Published</p>
                             </div>
                         </div>
@@ -320,14 +375,14 @@ export default function Dashboard() {
                         <span className="text-primary text-sm font-medium mb-1">{liveCount} Live</span>
                     </div>
                     <div className="flex flex-col gap-4 overflow-auto max-h-[300px]">
-                        {items.filter(i => i.status !== 'posted').length === 0 ? (
+                        {items.filter(i => i.status !== 'scheduled').length === 0 ? (
                             <div className="text-center py-12">
                                 <span className="material-symbols-outlined text-white/20 mb-4" style={{ fontSize: '48px' }}>inbox</span>
                                 <p className="text-white/40">No active pipelines</p>
                                 <p className="text-white/30 text-sm mt-1">Tap the record button to start</p>
                             </div>
                         ) : (
-                            items.filter(i => i.status !== 'posted').map(item => (
+                            items.filter(i => i.status !== 'scheduled').map(item => (
                                 <PipelineCard key={item.id} item={item} onClick={() => handleCardClick(item)} />
                             ))
                         )}

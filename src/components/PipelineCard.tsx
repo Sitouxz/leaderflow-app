@@ -27,7 +27,7 @@ function getIcon(title: string): string {
 }
 
 export default function PipelineCard({ item, onClick }: PipelineCardProps) {
-    const statusConfig = STATUS_CONFIG[item.status];
+    const statusConfig = STATUS_CONFIG[item.status] || STATUS_CONFIG.ideation;
     const displayTitle = item.selectedAngle || item.rawInput.slice(0, 50);
     const icon = getIcon(displayTitle);
     const mediaConfig = item.selectedMediaType ? MEDIA_TYPE_CONFIG[item.selectedMediaType] : null;

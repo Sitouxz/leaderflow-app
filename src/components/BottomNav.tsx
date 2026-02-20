@@ -10,10 +10,7 @@ interface BottomNavProps {
 }
 
 export default function BottomNav({ activeTab = 'capture', onTabChange }: BottomNavProps) {
-    const [active, setActive] = useState<NavItem>(activeTab);
-
     const handleClick = (tab: NavItem) => {
-        setActive(tab);
         onTabChange?.(tab);
     };
 
@@ -30,14 +27,14 @@ export default function BottomNav({ activeTab = 'capture', onTabChange }: Bottom
                     <button
                         key={item.id}
                         onClick={() => handleClick(item.id)}
-                        className={`flex flex-col items-center gap-1 p-2 transition-colors ${active === item.id
+                        className={`flex flex-col items-center gap-1 p-2 transition-colors ${activeTab === item.id
                             ? 'text-primary'
                             : 'text-white/40 hover:text-white'
                             }`}
                     >
                         <span
                             className="material-symbols-outlined"
-                            style={active === item.id ? { fontVariationSettings: "'FILL' 1" } : {}}
+                            style={activeTab === item.id ? { fontVariationSettings: "'FILL' 1" } : {}}
                         >
                             {item.icon}
                         </span>

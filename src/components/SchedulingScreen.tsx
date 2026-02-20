@@ -26,6 +26,8 @@ export default function SchedulingScreen({ item, onConfirm, onBack, onUpdateSche
     const [isEditingSchedule, setIsEditingSchedule] = useState(false);
     const [editDate, setEditDate] = useState<Date | null>(null);
 
+    const [isScheduling, setIsScheduling] = useState(false);
+
     const socialPost = item.socialPost;
     const mediaContent = item.mediaContent;
     const mediaConfig = item.selectedMediaType ? MEDIA_TYPE_CONFIG[item.selectedMediaType] : null;
@@ -49,6 +51,33 @@ export default function SchedulingScreen({ item, onConfirm, onBack, onUpdateSche
         if (editDate && onUpdateSchedule) {
             onUpdateSchedule(editDate);
             setIsEditingSchedule(false);
+        }
+    };
+
+    const handleSchedule = async () => {
+        if (!mediaContent || !socialPost) return;
+
+        setIsScheduling(true);
+        try {
+            // Import dynamically to avoid server-side issues if any
+            const { schedulePostAction } = await import('@/actions/socialActions');
+
+            const result = await schedulePostAction(
+                mediaContent,
+                selectedPlatforms,
+                socialPost.scheduledTime
+            );
+
+            if (result.success) {
+                onConfirm();
+            } else {
+                alert('Failed to schedule: ' + result.error);
+            }
+        } catch (error) {
+            console.error('Scheduling error:', error);
+            alert('An unexpected error occurred while scheduling.');
+        } finally {
+            setIsScheduling(false);
         }
     };
 
@@ -162,7 +191,7 @@ export default function SchedulingScreen({ item, onConfirm, onBack, onUpdateSche
                             <div className="relative">
                                 <DatePicker
                                     selected={editDate}
-                                    onChange={(date) => setEditDate(date)}
+                                    onChange={(date: Date | null) => setEditDate(date)}
                                     showTimeSelect
                                     dateFormat="MMMM d, yyyy h:mm aa"
                                     className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-primary/50"
@@ -216,12 +245,18 @@ export default function SchedulingScreen({ item, onConfirm, onBack, onUpdateSche
 
             {/* Confirm Button */}
             <button
-                onClick={onConfirm}
-                disabled={selectedPlatforms.length === 0 || isEditingSchedule}
+                onClick={handleSchedule}
+                disabled={selectedPlatforms.length === 0 || isEditingSchedule || isScheduling}
                 className="mt-4 w-full py-4 rounded-xl bg-emerald-500 text-black font-bold text-lg hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
             >
-                <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>send</span>
-                Schedule Post
+                {isScheduling ? (
+                    <span className="material-symbols-outlined animate-spin" style={{ fontSize: '24px' }}>
+                        progress_activity
+                    </span>
+                ) : (
+                    <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>send</span>
+                )}
+                {isScheduling ? 'Scheduling...' : 'Schedule Post'}
             </button>
         </div>
     );

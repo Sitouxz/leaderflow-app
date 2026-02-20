@@ -6,7 +6,8 @@ export type PipelineStatus =
     | 'media_generating'
     | 'media_review'
     | 'scheduling'
-    | 'posted';
+    | 'scheduling'
+    | 'scheduled';
 
 export type MediaType = 'infographic' | 'carousel' | 'image' | 'video';
 
@@ -123,11 +124,11 @@ export const STATUS_CONFIG: Record<PipelineStatus, StatusConfig> = {
         shadowColor: 'shadow-[0_0_8px_rgba(251,146,60,0.5)]',
         icon: 'schedule_send',
     },
-    posted: {
-        label: 'Posted',
+    scheduled: {
+        label: 'Scheduled',
         color: 'text-emerald-500/90',
         bgColor: 'bg-emerald-500',
         shadowColor: 'shadow-[0_0_8px_rgba(16,185,129,0.5)]',
-        icon: 'check_circle',
+        icon: 'calendar_today',
     },
 };

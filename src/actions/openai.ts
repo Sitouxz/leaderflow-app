@@ -2,6 +2,25 @@
 
 import { AI_CONFIG } from '@/services/aiConfig';
 import { AngleType, GeneratedAngle } from '@/services/mockOpenAI';
+import { getBrandProfile } from '@/services/brandService';
+
+// ... interface definitions ...
+
+function formatBrandContext(profile: any): string {
+    if (!profile) return '';
+
+    // Only add context if meaningful fields exist
+    const parts = [];
+    if (profile.companyName) parts.push(`Brand Name: ${profile.companyName}`);
+    if (profile.industry) parts.push(`Industry: ${profile.industry}`);
+    if (profile.targetAudience) parts.push(`Target Audience: ${profile.targetAudience}`);
+    if (profile.toneOfVoice) parts.push(`Tone of Voice: ${profile.toneOfVoice}`);
+    if (profile.keywords) parts.push(`Key Topics/Themes: ${profile.keywords}`);
+
+    if (parts.length === 0) return '';
+
+    return `\n\nBRAND CONTEXT (IMPORTANT - TAILOR OUTPUT TO THIS):\n${parts.join('\n')}`;
+}
 
 interface OpenAIMessage {
     role: 'system' | 'user' | 'assistant';
@@ -120,6 +139,9 @@ export async function generateStrategicAnglesAction(
     rawInput: string
 ): Promise<{ success: boolean; data?: GeneratedAngle[]; error?: string }> {
     try {
+        const brandProfile = await getBrandProfile();
+        const brandContext = formatBrandContext(brandProfile);
+
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -129,7 +151,7 @@ export async function generateStrategicAnglesAction(
             body: JSON.stringify({
                 model: AI_CONFIG.openai.chatModel,
                 messages: [
-                    { role: 'system', content: STRATEGIC_ANGLES_SYSTEM_PROMPT },
+                    { role: 'system', content: STRATEGIC_ANGLES_SYSTEM_PROMPT + brandContext },
                     { role: 'user', content: STRATEGIC_ANGLES_USER_PROMPT_TEMPLATE.replace('{INPUT}', rawInput) },
                 ],
                 max_completion_tokens: 4000,
@@ -161,6 +183,9 @@ export async function generateVideoBriefAction(
     angle: string
 ): Promise<{ success: boolean; data?: string; error?: string }> {
     try {
+        const brandProfile = await getBrandProfile();
+        const brandContext = formatBrandContext(brandProfile);
+
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -172,7 +197,7 @@ export async function generateVideoBriefAction(
                 messages: [
                     {
                         role: 'system',
-                        content: `You are a video production strategist. Create detailed video production briefs for thought leadership content. Include: title, duration, key messages, visual style, B-roll suggestions, audio notes, and deliverables.`
+                        content: `You are a video production strategist. Create detailed video production briefs for thought leadership content. Include: title, duration, key messages, visual style, B-roll suggestions, audio notes, and deliverables.${brandContext}`
                     },
                     {
                         role: 'user',
@@ -202,6 +227,9 @@ export async function generateSocialContentAction(
     mediaType: string
 ): Promise<{ success: boolean; data?: SocialContent; error?: string }> {
     try {
+        const brandProfile = await getBrandProfile();
+        const brandContext = formatBrandContext(brandProfile);
+
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -211,7 +239,7 @@ export async function generateSocialContentAction(
             body: JSON.stringify({
                 model: AI_CONFIG.openai.chatModel,
                 messages: [
-                    { role: 'system', content: SOCIAL_CONTENT_PROMPT },
+                    { role: 'system', content: SOCIAL_CONTENT_PROMPT + brandContext },
                     { role: 'user', content: `Topic: "${angle}"\nMedia type: ${mediaType}` }
                 ],
                 max_completion_tokens: 2000,
@@ -254,6 +282,9 @@ export async function generateImageGenPromptAction(
     mediaType: string
 ): Promise<{ success: boolean; data?: string; error?: string }> {
     try {
+        const brandProfile = await getBrandProfile();
+        const brandContext = formatBrandContext(brandProfile);
+
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -263,7 +294,7 @@ export async function generateImageGenPromptAction(
             body: JSON.stringify({
                 model: AI_CONFIG.openai.chatModel,
                 messages: [
-                    { role: 'system', content: IMAGE_PROMPT_SYSTEM_PROMPT },
+                    { role: 'system', content: IMAGE_PROMPT_SYSTEM_PROMPT + brandContext },
                     {
                         role: 'user',
                         content: mediaType === 'infographic'
@@ -310,6 +341,9 @@ export async function generateCarouselPromptsAction(
     angle: string
 ): Promise<{ success: boolean; data?: string[]; error?: string }> {
     try {
+        const brandProfile = await getBrandProfile();
+        const brandContext = formatBrandContext(brandProfile);
+
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -319,7 +353,7 @@ export async function generateCarouselPromptsAction(
             body: JSON.stringify({
                 model: AI_CONFIG.openai.chatModel,
                 messages: [
-                    { role: 'system', content: IMAGE_PROMPT_SYSTEM_PROMPT },
+                    { role: 'system', content: IMAGE_PROMPT_SYSTEM_PROMPT + brandContext },
                     {
                         role: 'user',
                         content: `Create 3 distinct, sequential image generation prompts for a LinkedIn carousel about: "${angle}".
