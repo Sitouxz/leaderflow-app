@@ -11,14 +11,6 @@ export interface ScheduledPost {
     error?: string;
     externalJobId?: string;
     brandId?: string;
-    brand?: {
-        socialAccounts: {
-            platform: string;
-            accessToken: string;
-            refreshToken: string | null;
-            tokenSecret: string | null;
-        }[];
-    };
     createdAt: string;
 }
 
@@ -26,14 +18,7 @@ export interface ScheduledPost {
 export async function getScheduledPosts(): Promise<ScheduledPost[]> {
     try {
         const posts = await prisma.scheduledPost.findMany({
-            orderBy: { createdAt: 'desc' },
-            include: {
-                brand: {
-                    include: {
-                        socialAccounts: true
-                    }
-                }
-            }
+            orderBy: { createdAt: 'desc' }
         });
 
         return posts.map(post => ({
@@ -45,14 +30,6 @@ export async function getScheduledPosts(): Promise<ScheduledPost[]> {
             error: post.error || undefined,
             externalJobId: post.externalJobId || undefined,
             brandId: post.brandId || undefined,
-            brand: post.brand ? {
-                socialAccounts: post.brand.socialAccounts.map(sa => ({
-                    platform: sa.platform,
-                    accessToken: sa.accessToken,
-                    refreshToken: sa.refreshToken,
-                    tokenSecret: sa.tokenSecret
-                }))
-            } : undefined,
             createdAt: post.createdAt.toISOString()
         }));
     } catch (error) {
@@ -61,50 +38,8 @@ export async function getScheduledPosts(): Promise<ScheduledPost[]> {
     }
 }
 
-/**
- * Gets a social account and refreshes it if needed.
- * Only supports Twitter OAuth 2.0 refresh for now.
- */
-export async function getAndRefreshSocialAccount(brandId: string, platform: string) {
-    const account = await prisma.socialAccount.findUnique({
-        where: { platform_brandId: { platform, brandId } }
-    });
-
-    if (!account) return null;
-
-    // Check if expired (with 5 min buffer)
-    if (account.expiresAt && new Date(account.expiresAt).getTime() < Date.now() + 300000) {
-        if (platform === 'twitter' && account.refreshToken) {
-            console.log(`[Scheduler] Refreshing Twitter token for brand ${brandId}...`);
-            try {
-                const { TwitterApi } = await import('twitter-api-v2');
-                const client = new TwitterApi({
-                    clientId: process.env.TWITTER_CLIENT_ID!,
-                    clientSecret: process.env.TWITTER_CLIENT_SECRET!
-                });
-
-                const { accessToken, refreshToken, expiresIn } = await client.refreshOAuth2Token(account.refreshToken);
-
-                return await prisma.socialAccount.update({
-                    where: { id: account.id },
-                    data: {
-                        accessToken,
-                        refreshToken: refreshToken || account.refreshToken,
-                        expiresAt: new Date(Date.now() + expiresIn * 1000)
-                    }
-                });
-            } catch (error) {
-                console.error('[Scheduler] Failed to refresh Twitter token:', error);
-                throw error;
-            }
-        }
-    }
-
-    return account;
-}
-
 // Save a new post
-export async function saveScheduledPost(post: Omit<ScheduledPost, 'id' | 'createdAt' | 'status' | 'brand'> & { externalJobId?: string }): Promise<ScheduledPost> {
+export async function saveScheduledPost(post: Omit<ScheduledPost, 'id' | 'createdAt' | 'status'> & { externalJobId?: string }): Promise<ScheduledPost> {
     try {
         const newPost = await prisma.scheduledPost.create({
             data: {
@@ -114,13 +49,6 @@ export async function saveScheduledPost(post: Omit<ScheduledPost, 'id' | 'create
                 status: 'pending',
                 brandId: post.brandId || null,
                 externalJobId: post.externalJobId || null,
-            },
-            include: {
-                brand: {
-                    include: {
-                        socialAccounts: true
-                    }
-                }
             }
         });
 

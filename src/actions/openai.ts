@@ -6,7 +6,7 @@ import { getBrandProfile } from '@/services/brandService';
 
 // ... interface definitions ...
 
-function formatBrandContext(profile: any): string {
+function formatBrandContext(profile: BrandProfile | null): string {
     if (!profile) return '';
 
     // Only add context if meaningful fields exist
@@ -105,9 +105,62 @@ Follow these principles for the prompt:
 
 Format the output as a single, potent paragraph of text that can be pasted directly into the image generator. Do not include labels like "Prompt:" or quotation marks.`;
 
+import { BrandProfile } from '@prisma/client';
+
 // ----------------------------------------------------------------------
 // Helpers
 // ----------------------------------------------------------------------
+
+interface OpenAIActionResponse {
+    choices: Array<{
+        message: {
+            content: string;
+        };
+    }>;
+}
+
+interface OpenAIRequestPayload {
+    model: string;
+    messages: Array<{
+        role: 'system' | 'user' | 'assistant';
+        content: string;
+    }>;
+    response_format?: { type: 'json_object' };
+    temperature?: number;
+    max_completion_tokens?: number;
+}
+
+/**
+ * Helper to call OpenAI API with standard error handling
+ */
+async function callOpenAI(
+    apiKey: string,
+    payload: OpenAIRequestPayload
+): Promise<{ success: boolean; data?: string; error?: string }> {
+    try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[OpenAI Action] API error:', response.status, errorText);
+            return { success: false, error: `OpenAI API error: ${response.status}` };
+        }
+
+        const data: OpenAIActionResponse = await response.json();
+        return { success: true, data: data.choices[0]?.message?.content };
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        console.error('[OpenAI Action] Service error:', error);
+        return { success: false, error: message };
+    }
+}
 
 function parseAnglesResponse(content: string): GeneratedAngle[] {
     try {
@@ -138,42 +191,25 @@ export async function generateStrategicAnglesAction(
     apiKey: string,
     rawInput: string
 ): Promise<{ success: boolean; data?: GeneratedAngle[]; error?: string }> {
+    const brandProfile = await getBrandProfile();
+    const brandContext = formatBrandContext(brandProfile);
+
+    const result = await callOpenAI(apiKey, {
+        model: AI_CONFIG.openai.chatModel,
+        messages: [
+            { role: 'system', content: STRATEGIC_ANGLES_SYSTEM_PROMPT + brandContext },
+            { role: 'user', content: STRATEGIC_ANGLES_USER_PROMPT_TEMPLATE.replace('{INPUT}', rawInput) },
+        ],
+        max_completion_tokens: 4000,
+    });
+
+    if (!result.success) return { success: false, error: result.error };
+    if (!result.data) return { success: false, error: 'No data returned from OpenAI' };
+
     try {
-        const brandProfile = await getBrandProfile();
-        const brandContext = formatBrandContext(brandProfile);
-
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-                model: AI_CONFIG.openai.chatModel,
-                messages: [
-                    { role: 'system', content: STRATEGIC_ANGLES_SYSTEM_PROMPT + brandContext },
-                    { role: 'user', content: STRATEGIC_ANGLES_USER_PROMPT_TEMPLATE.replace('{INPUT}', rawInput) },
-                ],
-                max_completion_tokens: 4000,
-            }),
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('[OpenAI Action] API error:', response.status, errorText);
-            return { success: false, error: `OpenAI API error: ${response.status}` };
-        }
-
-        const data: OpenAIResponse = await response.json();
-        const content = data.choices[0]?.message?.content;
-
-        if (!content) return { success: false, error: 'Empty response' };
-
-        const angles = parseAnglesResponse(content);
+        const angles = parseAnglesResponse(result.data);
         return { success: true, data: angles };
-
     } catch (error: any) {
-        console.error('[OpenAI Action] Service error:', error);
         return { success: false, error: error.message };
     }
 }
@@ -182,43 +218,26 @@ export async function generateVideoBriefAction(
     apiKey: string,
     angle: string
 ): Promise<{ success: boolean; data?: string; error?: string }> {
-    try {
-        const brandProfile = await getBrandProfile();
-        const brandContext = formatBrandContext(brandProfile);
+    const brandProfile = await getBrandProfile();
+    const brandContext = formatBrandContext(brandProfile);
 
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
+    const result = await callOpenAI(apiKey, {
+        model: AI_CONFIG.openai.chatModel,
+        messages: [
+            {
+                role: 'system',
+                content: `You are a video production strategist. Create detailed video production briefs for thought leadership content. Include: title, duration, key messages, visual style, B-roll suggestions, audio notes, and deliverables.${brandContext}`
             },
-            body: JSON.stringify({
-                model: AI_CONFIG.openai.chatModel,
-                messages: [
-                    {
-                        role: 'system',
-                        content: `You are a video production strategist. Create detailed video production briefs for thought leadership content. Include: title, duration, key messages, visual style, B-roll suggestions, audio notes, and deliverables.${brandContext}`
-                    },
-                    {
-                        role: 'user',
-                        content: `Create a professional video production brief for this content angle: "${angle}"\n\nThe video should be 2-3 minutes, suitable for LinkedIn and YouTube, with a professional thought leadership tone.\n\nFormat as markdown with clear sections.`
-                    }
-                ],
-                max_completion_tokens: 1500,
-            }),
-        });
+            {
+                role: 'user',
+                content: `Create a professional video production brief for this content angle: "${angle}"\n\nThe video should be 2-3 minutes, suitable for LinkedIn and YouTube, with a professional thought leadership tone.\n\nFormat as markdown with clear sections.`
+            }
+        ],
+        max_completion_tokens: 1500,
+    });
 
-        if (!response.ok) {
-            return { success: false, error: `API error: ${response.status}` };
-        }
-
-        const data: OpenAIResponse = await response.json();
-        const content = data.choices[0]?.message?.content;
-        return { success: true, data: content || '' };
-
-    } catch (error: any) {
-        return { success: false, error: error.message };
-    }
+    if (!result.success) return { success: false, error: result.error };
+    return { success: true, data: result.data };
 }
 
 export async function generateSocialContentAction(
@@ -226,38 +245,23 @@ export async function generateSocialContentAction(
     angle: string,
     mediaType: string
 ): Promise<{ success: boolean; data?: SocialContent; error?: string }> {
+    const brandProfile = await getBrandProfile();
+    const brandContext = formatBrandContext(brandProfile);
+
+    const result = await callOpenAI(apiKey, {
+        model: AI_CONFIG.openai.chatModel,
+        messages: [
+            { role: 'system', content: SOCIAL_CONTENT_PROMPT + brandContext },
+            { role: 'user', content: `Topic: "${angle}"\nMedia type: ${mediaType}` }
+        ],
+        max_completion_tokens: 2000,
+    });
+
+    if (!result.success) return { success: false, error: result.error };
+    if (!result.data) return { success: false, error: 'No data returned from OpenAI' };
+
     try {
-        const brandProfile = await getBrandProfile();
-        const brandContext = formatBrandContext(brandProfile);
-
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-                model: AI_CONFIG.openai.chatModel,
-                messages: [
-                    { role: 'system', content: SOCIAL_CONTENT_PROMPT + brandContext },
-                    { role: 'user', content: `Topic: "${angle}"\nMedia type: ${mediaType}` }
-                ],
-                max_completion_tokens: 2000,
-            }),
-        });
-
-        if (!response.ok) {
-            return { success: false, error: `API error: ${response.status}` };
-        }
-
-        const data: OpenAIResponse = await response.json();
-        console.log('[OpenAI Action] Social Content Raw Response:', JSON.stringify(data, null, 2));
-        const content = data.choices?.[0]?.message?.content;
-        if (!content) return { success: false, error: 'OpenAI returned empty content' };
-
-        // Remove markdown code blocks if present
-        const cleanContent = content.replace(/```json\n?|\n?```/g, '');
-
+        const cleanContent = result.data.replace(/```json\n?|\n?```/g, '');
         const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
         if (!jsonMatch) return { success: false, error: 'No JSON found' };
 
@@ -270,7 +274,6 @@ export async function generateSocialContentAction(
                 hashtags: Array.isArray(parsed.hashtags) ? parsed.hashtags : [],
             }
         };
-
     } catch (error: any) {
         return { success: false, error: error.message };
     }
@@ -281,124 +284,79 @@ export async function generateImageGenPromptAction(
     angle: string,
     mediaType: string
 ): Promise<{ success: boolean; data?: string; error?: string }> {
-    try {
-        const brandProfile = await getBrandProfile();
-        const brandContext = formatBrandContext(brandProfile);
+    const brandProfile = await getBrandProfile();
+    const brandContext = formatBrandContext(brandProfile);
 
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-                model: AI_CONFIG.openai.chatModel,
-                messages: [
-                    { role: 'system', content: IMAGE_PROMPT_SYSTEM_PROMPT + brandContext },
-                    {
-                        role: 'user',
-                        content: mediaType === 'infographic'
-                            ? `Create a prompt for a professional infographic about: "${angle}".
-                               Context: LinkedIn/Instagram thought leadership.
-                               Style: A clean, structured infographic.
-                               Important: For this specific request, clear, readable headers or large numbers ARE allowed if they are central to the design, but prefer abstract representations of data (charts, nodes, flows). 
-                               Focus on "layout", "flow", "connection", and "visual hierarchy".
-                               Output ONLY the prompt text.`
-                            : `Create a high-end, realistic image generation prompt for a ${mediaType} about: "${angle}". 
-                        
-                               Context: The image is for a professional LinkedIn/Instagram thought leadership post. 
-                               Style: Dark, premium, tech-forward but human.
-                               
-                               Output ONLY the prompt text.`
-                    }
-                ],
-                max_completion_tokens: 500,
-            }),
-        });
+    const promptUser = mediaType === 'infographic'
+        ? `Create a prompt for a professional infographic about: "${angle}".
+           Context: LinkedIn/Instagram thought leadership.
+           Style: A clean, structured infographic.
+           Important: For this specific request, clear, readable headers or large numbers ARE allowed if they are central to the design, but prefer abstract representations of data (charts, nodes, flows). 
+           Focus on "layout", "flow", "connection", and "visual hierarchy".
+           Output ONLY the prompt text.`
+        : `Create a high-end, realistic image generation prompt for a ${mediaType} about: "${angle}". 
+    
+           Context: The image is for a professional LinkedIn/Instagram thought leadership post. 
+           Style: Dark, premium, tech-forward but human.
+           
+           Output ONLY the prompt text.`;
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('[OpenAI Action] Image Prompt API error:', response.status, errorText);
-            return { success: false, error: `API error: ${response.status}` };
-        }
+    const result = await callOpenAI(apiKey, {
+        model: AI_CONFIG.openai.chatModel,
+        messages: [
+            { role: 'system', content: IMAGE_PROMPT_SYSTEM_PROMPT + brandContext },
+            { role: 'user', content: promptUser }
+        ],
+        max_completion_tokens: 500,
+    });
 
-        const data: OpenAIResponse = await response.json();
-        console.log('[OpenAI Action] Image Prompt Raw Response:', JSON.stringify(data, null, 2));
-
-        const content = data.choices?.[0]?.message?.content;
-        if (!content) return { success: false, error: 'OpenAI returned empty content' };
-
-        return { success: true, data: content };
-
-    } catch (error: any) {
-        console.error('[OpenAI Action] Image Prompt error:', error);
-        return { success: false, error: error?.message || String(error) || 'Unknown server error' };
-    }
+    if (!result.success) return { success: false, error: result.error };
+    return { success: true, data: result.data };
 }
 
 export async function generateCarouselPromptsAction(
     apiKey: string,
     angle: string
 ): Promise<{ success: boolean; data?: string[]; error?: string }> {
+    const brandProfile = await getBrandProfile();
+    const brandContext = formatBrandContext(brandProfile);
+
+    const result = await callOpenAI(apiKey, {
+        model: AI_CONFIG.openai.chatModel,
+        messages: [
+            { role: 'system', content: IMAGE_PROMPT_SYSTEM_PROMPT + brandContext },
+            {
+                role: 'user',
+                content: `Create 3 distinct, sequential image generation prompts for a LinkedIn carousel about: "${angle}".
+
+                Structure the 3 slides as a visual story:
+                1. Slide 1 (Hook): A striking, high-impact metaphorical image introducing the concept.
+                2. Slide 2 (Insight): A detailed, complex visual representing the core analysis or friction.
+                3. Slide 3 (Solution): A forward-looking, inspiring visual representing the resolution or future state.
+
+                Style Requirements:
+                - Maintain a cohesive "cinematic, premium, photorealistic" style across all 3.
+                - strictly NO TEXT in the images.
+                
+                Output strictly as a JSON array of strings:
+                ["prompt 1", "prompt 2", "prompt 3"]`
+            }
+        ],
+        max_completion_tokens: 1000,
+    });
+
+    if (!result.success) return { success: false, error: result.error };
+    if (!result.data) return { success: false, error: 'No data returned from OpenAI' };
+
     try {
-        const brandProfile = await getBrandProfile();
-        const brandContext = formatBrandContext(brandProfile);
-
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-                model: AI_CONFIG.openai.chatModel,
-                messages: [
-                    { role: 'system', content: IMAGE_PROMPT_SYSTEM_PROMPT + brandContext },
-                    {
-                        role: 'user',
-                        content: `Create 3 distinct, sequential image generation prompts for a LinkedIn carousel about: "${angle}".
-
-                        Structure the 3 slides as a visual story:
-                        1. Slide 1 (Hook): A striking, high-impact metaphorical image introducing the concept.
-                        2. Slide 2 (Insight): A detailed, complex visual representing the core analysis or friction.
-                        3. Slide 3 (Solution): A forward-looking, inspiring visual representing the resolution or future state.
-
-                        Style Requirements:
-                        - Maintain a cohesive "cinematic, premium, photorealistic" style across all 3.
-                        - strictly NO TEXT in the images.
-                        
-                        Output strictly as a JSON array of strings:
-                        ["prompt 1", "prompt 2", "prompt 3"]`
-                    }
-                ],
-                max_completion_tokens: 1000,
-            }),
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('[OpenAI Action] Carousel Prompt API error:', response.status, errorText);
-            return { success: false, error: `API error: ${response.status}` };
-        }
-
-        const data: OpenAIResponse = await response.json();
-        console.log('[OpenAI Action] Carousel Prompt Raw Response:', JSON.stringify(data, null, 2));
-
-        let content = data.choices?.[0]?.message?.content;
-        if (!content) return { success: false, error: 'OpenAI returned empty content' };
-
-        // Clean markdown
-        content = content.replace(/```json\n?|\n?```/g, '');
-
-        const prompts = JSON.parse(content);
+        const cleanContent = result.data.replace(/```json\n?|\n?```/g, '');
+        const prompts = JSON.parse(cleanContent);
         if (!Array.isArray(prompts) || prompts.length === 0) {
             return { success: false, error: 'Failed to parse prompts array' };
         }
-
         return { success: true, data: prompts.slice(0, 3) };
-
     } catch (error: any) {
-        console.error('[OpenAI Action] Carousel Prompt error:', error);
-        return { success: false, error: error?.message || String(error) };
+        return { success: false, error: error.message };
     }
 }
+

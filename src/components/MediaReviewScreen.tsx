@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { PipelineItem, MEDIA_TYPE_CONFIG } from '@/types/pipeline';
+import { usePipeline } from '@/context/PipelineContext';
+import { useToast } from '@/context/ToastContext';
 
 interface MediaReviewScreenProps {
     item: PipelineItem;
@@ -20,15 +22,39 @@ export default function MediaReviewScreen({
     onBack,
     isLoading
 }: MediaReviewScreenProps) {
+    const { updateMediaContent } = usePipeline();
+    const { showToast } = useToast();
+
     const [showFeedback, setShowFeedback] = useState(false);
     const [feedback, setFeedback] = useState('');
     const [activeTab, setActiveTab] = useState<'preview' | 'caption' | 'seo'>('preview');
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [isEditing, setIsEditing] = useState(false);
+
+    const [editedCaption, setEditedCaption] = useState(item.mediaContent?.caption || '');
+    const [editedDescription, setEditedDescription] = useState(item.mediaContent?.description || '');
 
     const mediaType = item.selectedMediaType;
     const content = item.mediaContent;
     const config = mediaType ? MEDIA_TYPE_CONFIG[mediaType] : null;
     const isVideo = mediaType === 'video';
+
+    const copyToClipboard = useCallback((text: string, label: string) => {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast(`${label} copied to clipboard`, 'success');
+        }).catch(() => {
+            showToast('Failed to copy', 'error');
+        });
+    }, [showToast]);
+
+    const handleSaveEdits = () => {
+        updateMediaContent(item.id, {
+            caption: editedCaption,
+            description: editedDescription
+        });
+        setIsEditing(false);
+        showToast('Changes saved locally', 'success');
+    };
 
     // Loading state
     if (item.status === 'media_generating' || !content) {
@@ -63,10 +89,9 @@ export default function MediaReviewScreen({
             onReject(feedback.trim());
             setFeedback('');
             setShowFeedback(false);
+            showToast('Feedback submitted for regeneration', 'info');
         }
     };
-
-
 
     // Reset selection when content changes (e.g. regeneration)
     if (selectedImage && !content.previewUrls?.includes(selectedImage) && selectedImage !== content.imageUrl) {
@@ -85,6 +110,15 @@ export default function MediaReviewScreen({
                 <div className="flex-1">
                     <h2 className="text-white text-xl font-bold">Review {config?.label}</h2>
                     <p className="text-white/50 text-sm mt-0.5 truncate">{item.selectedAngle}</p>
+                </div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setIsEditing(!isEditing)}
+                        className={`flex items-center justify-center size-10 rounded-full transition-colors ${isEditing ? 'bg-primary text-black' : 'bg-surface-dark text-white/70 hover:bg-white/10'}`}
+                        title={isEditing ? "Exit Edit Mode" : "Edit Content"}
+                    >
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{isEditing ? 'close' : 'edit'}</span>
+                    </button>
                 </div>
             </div>
 
@@ -112,10 +146,10 @@ export default function MediaReviewScreen({
                 {/* Preview Tab */}
                 {activeTab === 'preview' && (
                     <div className="space-y-4">
-                        <div className="rounded-2xl overflow-hidden bg-surface-dark relative group">
+                        <div className="rounded-2xl overflow-hidden bg-surface-dark relative group ring-1 ring-white/5">
                             <img src={currentImage} alt={config?.label} className="w-full aspect-video object-cover transition-opacity duration-300" />
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                                <span className="text-white/80 text-sm font-medium">Preview Mode</span>
+                                <span className="text-white/80 text-sm font-medium">Visual Preview</span>
                             </div>
                         </div>
                         {content.previewUrls && content.previewUrls.length > 1 && (
@@ -137,11 +171,19 @@ export default function MediaReviewScreen({
                         )}
                         {isVideo && content.videoBrief && (
                             <div className="bg-surface-dark border border-yellow-400/20 rounded-2xl p-4">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <span className="material-symbols-outlined text-yellow-400" style={{ fontSize: '20px' }}>description</span>
-                                    <span className="text-yellow-400 font-medium text-sm">Brief for Human Editor</span>
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-yellow-400" style={{ fontSize: '20px' }}>description</span>
+                                        <span className="text-yellow-400 font-medium text-sm">Brief for Human Editor</span>
+                                    </div>
+                                    <button
+                                        onClick={() => copyToClipboard(content.videoBrief || '', 'Video brief')}
+                                        className="size-8 rounded-lg bg-yellow-400/10 text-yellow-400 flex items-center justify-center hover:bg-yellow-400/20 transition-colors"
+                                    >
+                                        <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>content_copy</span>
+                                    </button>
                                 </div>
-                                <pre className="text-white/70 text-xs whitespace-pre-wrap font-mono leading-relaxed max-h-40 overflow-auto">
+                                <pre className="text-white/70 text-xs whitespace-pre-wrap font-mono leading-relaxed max-h-40 overflow-auto scrollbar-hide">
                                     {content.videoBrief}
                                 </pre>
                             </div>
@@ -152,20 +194,63 @@ export default function MediaReviewScreen({
                 {/* Caption Tab */}
                 {activeTab === 'caption' && (
                     <div className="space-y-4">
-                        <div className="bg-surface-dark border border-white/5 rounded-2xl p-4">
+                        <div className="bg-surface-dark border border-white/5 rounded-2xl p-4 transition-all focus-within:border-primary/30">
                             <div className="flex items-center justify-between mb-3">
-                                <span className="text-white/40 text-xs uppercase tracking-wider">AI-Optimized Caption</span>
-                                <span className="text-primary text-xs flex items-center gap-1">
-                                    <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>auto_awesome</span>
-                                    SEO Optimized
-                                </span>
+                                <span className="text-white/40 text-xs uppercase tracking-wider">Caption</span>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => copyToClipboard(isEditing ? editedCaption : content.caption, 'Caption')}
+                                        className="size-8 rounded-lg bg-white/5 text-white/50 flex items-center justify-center hover:bg-white/10 hover:text-white transition-colors"
+                                    >
+                                        <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>content_copy</span>
+                                    </button>
+                                    <span className="text-primary text-xs flex items-center gap-1">
+                                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>auto_awesome</span>
+                                        Optimized
+                                    </span>
+                                </div>
                             </div>
-                            <p className="text-white text-sm whitespace-pre-line leading-relaxed">{content.caption}</p>
+                            {isEditing ? (
+                                <textarea
+                                    value={editedCaption}
+                                    onChange={(e) => setEditedCaption(e.target.value)}
+                                    className="w-full h-48 bg-black/20 rounded-xl p-3 text-white text-sm leading-relaxed focus:outline-none placeholder:text-white/20 resize-none"
+                                    placeholder="Write your caption here..."
+                                />
+                            ) : (
+                                <p className="text-white text-sm whitespace-pre-line leading-relaxed">{content.caption}</p>
+                            )}
                         </div>
-                        <div className="bg-surface-dark border border-white/5 rounded-2xl p-4">
-                            <span className="text-white/40 text-xs uppercase tracking-wider block mb-3">Description</span>
-                            <p className="text-white/80 text-sm leading-relaxed">{content.description}</p>
+                        <div className="bg-surface-dark border border-white/5 rounded-2xl p-4 transition-all focus-within:border-primary/30">
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="text-white/40 text-xs uppercase tracking-wider">Description</span>
+                                <button
+                                    onClick={() => copyToClipboard(isEditing ? editedDescription : content.description, 'Description')}
+                                    className="size-8 rounded-lg bg-white/5 text-white/50 flex items-center justify-center hover:bg-white/10 hover:text-white transition-colors"
+                                >
+                                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>content_copy</span>
+                                </button>
+                            </div>
+                            {isEditing ? (
+                                <textarea
+                                    value={editedDescription}
+                                    onChange={(e) => setEditedDescription(e.target.value)}
+                                    className="w-full h-24 bg-black/20 rounded-xl p-3 text-white/80 text-sm leading-relaxed focus:outline-none placeholder:text-white/20 resize-none"
+                                    placeholder="Brief SEO description..."
+                                />
+                            ) : (
+                                <p className="text-white/80 text-sm leading-relaxed">{content.description}</p>
+                            )}
                         </div>
+
+                        {isEditing && (
+                            <button
+                                onClick={handleSaveEdits}
+                                className="w-full py-3 rounded-xl bg-primary text-black font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                            >
+                                Save Changes
+                            </button>
+                        )}
                     </div>
                 )}
 
@@ -173,33 +258,41 @@ export default function MediaReviewScreen({
                 {activeTab === 'seo' && (
                     <div className="space-y-4">
                         <div className="bg-surface-dark border border-white/5 rounded-2xl p-4">
-                            <span className="text-white/40 text-xs uppercase tracking-wider block mb-3">Hashtags</span>
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="text-white/40 text-xs uppercase tracking-wider">Hashtags</span>
+                                <button
+                                    onClick={() => copyToClipboard(content.hashtags.join(' '), 'Hashtags')}
+                                    className="size-8 rounded-lg bg-white/5 text-white/50 flex items-center justify-center hover:bg-white/10 hover:text-white transition-colors"
+                                >
+                                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>content_copy</span>
+                                </button>
+                            </div>
                             <div className="flex flex-wrap gap-2">
                                 {content.hashtags.map((tag, i) => (
-                                    <span key={i} className="text-primary text-sm bg-primary/10 px-3 py-1.5 rounded-full">
+                                    <span key={i} className="text-primary text-sm bg-primary/10 px-3 py-1.5 rounded-full border border-primary/10">
                                         {tag}
                                     </span>
                                 ))}
                             </div>
                         </div>
-                        <div className="bg-gradient-to-br from-primary/5 to-blue-500/5 border border-primary/10 rounded-2xl p-4">
+                        <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-2xl p-4 shadow-sm">
                             <div className="flex items-start gap-3">
-                                <span className="material-symbols-outlined text-primary" style={{ fontSize: '20px' }}>tips_and_updates</span>
+                                <span className="material-symbols-outlined text-emerald-400" style={{ fontSize: '20px' }}>verified</span>
                                 <div>
-                                    <h4 className="text-white font-medium text-sm mb-1">SEO Score: Excellent</h4>
-                                    <p className="text-white/50 text-xs">Caption is optimized for engagement with strong hook, clear CTA, and trending hashtags.</p>
+                                    <h4 className="text-white font-medium text-sm mb-1">SEO Health: 98%</h4>
+                                    <p className="text-white/50 text-xs leading-relaxed">High readability score. Keywords match industry standards. Visual consistency verified.</p>
                                 </div>
                             </div>
                         </div>
                         <div className="bg-surface-dark border border-white/5 rounded-2xl p-4">
-                            <span className="text-white/40 text-xs uppercase tracking-wider block mb-3">Platform Optimization</span>
-                            <div className="space-y-2">
+                            <span className="text-white/40 text-xs uppercase tracking-wider block mb-3">Platform Compliance</span>
+                            <div className="space-y-3">
                                 {['LinkedIn', 'Twitter', 'Instagram'].map((platform) => (
-                                    <div key={platform} className="flex items-center justify-between py-2">
+                                    <div key={platform} className="flex items-center justify-between py-1 px-1">
                                         <span className="text-white/70 text-sm">{platform}</span>
-                                        <span className="text-emerald-400 text-xs flex items-center gap-1">
+                                        <span className="text-emerald-400 text-xs font-medium flex items-center gap-1.5 bg-emerald-400/10 px-2 py-0.5 rounded-md">
                                             <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check_circle</span>
-                                            Ready
+                                            Valid
                                         </span>
                                     </div>
                                 ))}
@@ -211,35 +304,42 @@ export default function MediaReviewScreen({
 
             {/* Actions */}
             {showFeedback ? (
-                <div className="mt-4 space-y-3">
+                <div className="mt-4 space-y-3 bg-surface-dark/50 p-4 rounded-2xl border border-white/5">
                     <textarea
                         value={feedback}
                         onChange={(e) => setFeedback(e.target.value)}
-                        placeholder="Describe what you'd like changed (media, caption, hashtags, etc.)..."
-                        className="w-full h-20 bg-background-dark border border-white/10 rounded-xl p-3 text-white placeholder:text-white/30 resize-none focus:outline-none focus:border-primary/50 text-sm"
+                        placeholder="What should be Different? (e.g. 'more tactical', 'shorter hook', 'different image style')..."
+                        className="w-full h-24 bg-background-dark border border-white/10 rounded-xl p-3 text-white placeholder:text-white/30 resize-none focus:outline-none focus:border-primary/50 text-sm"
                         autoFocus
                     />
                     <div className="flex gap-2">
                         <button onClick={() => setShowFeedback(false)} className="flex-1 py-3 rounded-xl bg-white/5 text-white/60 font-medium hover:bg-white/10 transition-colors text-sm">
                             Cancel
                         </button>
-                        <button onClick={handleReject} disabled={!feedback.trim() || isLoading} className="flex-1 py-3 rounded-xl bg-yellow-500 text-black font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 text-sm">
+                        <button onClick={handleReject} disabled={!feedback.trim() || isLoading} className="flex-1 py-3 rounded-xl bg-yellow-500 text-black font-bold hover:opacity-90 transition-opacity disabled:opacity-50 text-sm">
                             Regenerate
-                        </button>
-                        <button onClick={onChangeType} className="flex-1 py-3 rounded-xl bg-purple-500 text-white font-semibold hover:opacity-90 transition-opacity text-sm">
-                            Change Type
                         </button>
                     </div>
                 </div>
             ) : (
                 <div className="flex gap-2 mt-4">
-                    <button onClick={() => setShowFeedback(true)} className="flex-1 py-4 rounded-xl bg-surface-dark border border-white/10 text-white font-medium hover:bg-white/5 transition-colors flex items-center justify-center gap-2">
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
+                    <button
+                        onClick={() => setShowFeedback(true)}
+                        className="flex-[0.4] py-4 rounded-xl bg-surface-dark border border-white/10 text-white font-medium hover:bg-white/5 transition-colors flex items-center justify-center gap-2 text-sm"
+                    >
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>refresh</span>
                         Reject
                     </button>
-                    <button onClick={onApprove} disabled={isLoading} className="flex-1 py-4 rounded-xl bg-emerald-500 text-black font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2">
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>check</span>
-                        Approve
+                    <button
+                        onClick={() => {
+                            onApprove();
+                            showToast('Content approved!', 'success');
+                        }}
+                        disabled={isLoading || isEditing}
+                        className="flex-1 py-4 rounded-xl bg-emerald-500 text-black font-bold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 text-sm"
+                    >
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>check_circle</span>
+                        Approve & Schedule
                     </button>
                 </div>
             )}

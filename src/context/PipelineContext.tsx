@@ -26,6 +26,9 @@ interface PipelineContextType {
     confirmPost: (itemId: string) => void;
     updateScheduledTime: (itemId: string, date: Date) => void;
 
+    // Stage 2: Update content manually
+    updateMediaContent: (itemId: string, updates: any) => void;
+
     // Navigation
     setCurrentItem: (item: PipelineItem | null) => void;
 }
@@ -165,10 +168,8 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
         });
     }, []);
 
-    // Stage 3: Confirm and post
     const confirmPost = useCallback((itemId: string) => {
         updateItem(itemId, { status: 'scheduled' as PipelineStatus });
-        setCurrentItem(null);
     }, []);
 
     return (
@@ -185,6 +186,17 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
                 changeMediaType,
                 confirmPost,
                 setCurrentItem,
+                updateMediaContent: (itemId: string, updates: any) => {
+                    const item = items.find(i => i.id === itemId);
+                    if (item?.mediaContent) {
+                        updateItem(itemId, {
+                            mediaContent: {
+                                ...item.mediaContent,
+                                ...updates
+                            }
+                        });
+                    }
+                },
                 updateScheduledTime: (itemId: string, date: Date) => {
                     const item = items.find(i => i.id === itemId);
                     if (item?.socialPost) {

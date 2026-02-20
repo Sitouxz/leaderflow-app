@@ -12,7 +12,6 @@ export const AI_CONFIG = {
     gemini: {
         defaultModel: 'gemini-2.5-flash-image' as const,
     },
-},
 };
 
 export type GeminiModel = 'gemini-2.5-flash-image' | 'gemini-3-pro-image-preview';
@@ -24,11 +23,20 @@ export interface GeminiConfig {
 
 /**
  * Get API keys from environment or localStorage
+ * Priority: Server-side secret > Client-side public env var > LocalStorage
  */
 export function getOpenAIKey(): string | null {
-    if (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_OPENAI_API_KEY) {
-        return process.env.NEXT_PUBLIC_OPENAI_API_KEY || null;
+    // Check for server-side secret first (not prefixed with NEXT_PUBLIC)
+    if (typeof process !== 'undefined' && process.env.OPENAI_API_KEY) {
+        return process.env.OPENAI_API_KEY;
     }
+
+    // Check for public env var
+    if (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_OPENAI_API_KEY) {
+        return process.env.NEXT_PUBLIC_OPENAI_API_KEY;
+    }
+
+    // Fallback to localStorage (client-only)
     if (typeof window !== 'undefined') {
         return localStorage.getItem('openai_api_key');
     }
@@ -36,9 +44,14 @@ export function getOpenAIKey(): string | null {
 }
 
 export function getGoogleAIKey(): string | null {
-    if (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_GOOGLE_AI_API_KEY) {
-        return process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY || null;
+    if (typeof process !== 'undefined' && process.env.GOOGLE_AI_API_KEY) {
+        return process.env.GOOGLE_AI_API_KEY;
     }
+
+    if (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY) {
+        return process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY;
+    }
+
     if (typeof window !== 'undefined') {
         return localStorage.getItem('google_ai_api_key');
     }
@@ -75,7 +88,6 @@ export function getGeminiConfig(): GeminiConfig {
     // Default / Flash
     return {
         model: 'gemini-2.5-flash-image',
-        // No imageSize for Flash/Free tier
     };
 }
 

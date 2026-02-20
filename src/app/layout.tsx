@@ -21,6 +21,9 @@ export const metadata: Metadata = {
   description: "Hybrid AI + Human workflow for thought leadership content",
 };
 
+import { ToastProvider } from "@/context/ToastContext";
+import { PipelineProvider } from "@/context/PipelineContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -37,7 +40,11 @@ export default function RootLayout({
       <body
         className={`${inter.variable} font-display bg-background-dark h-full w-full overflow-hidden flex flex-col antialiased`}
       >
-        {children}
+        <ToastProvider>
+          <PipelineProvider>
+            {children}
+          </PipelineProvider>
+        </ToastProvider>
       </body>
     </html>
   );

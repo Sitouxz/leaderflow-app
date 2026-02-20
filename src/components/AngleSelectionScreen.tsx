@@ -2,6 +2,7 @@
 
 import { PipelineItem } from '@/types/pipeline';
 import { GeneratedAngle, ANGLE_TYPE_CONFIG } from '@/types/pipeline';
+import { AngleSkeleton } from '@/components/Skeleton';
 
 interface AngleSelectionScreenProps {
     item: PipelineItem;
@@ -51,9 +52,13 @@ export default function AngleSelectionScreen({ item, onSelectAngle, onBack, isLo
             )}
 
             {/* Angles List or Loading Skeleton */}
-            <div className="flex-1 overflow-auto space-y-3">
+            <div className="flex-1 overflow-auto space-y-3 scrollbar-hide">
                 {isLoading ? (
-                    <LoadingSkeleton />
+                    <div className="space-y-3 animate-pulse">
+                        <AngleSkeleton />
+                        <AngleSkeleton />
+                        <AngleSkeleton />
+                    </div>
                 ) : (
                     angles.map((angle: GeneratedAngle, index: number) => {
                         const typeConfig = ANGLE_TYPE_CONFIG[angle.type];
@@ -111,37 +116,3 @@ export default function AngleSelectionScreen({ item, onSelectAngle, onBack, isLo
         </div>
     );
 }
-
-// Loading skeleton component
-const LoadingSkeleton = () => (
-    <div className="space-y-3 animate-pulse">
-        {[1, 2, 3].map((i) => (
-            <div key={i} className="w-full bg-surface-dark/80 border border-white/5 rounded-2xl p-4">
-                <div className="flex items-start gap-4">
-                    {/* Number Badge Skeleton */}
-                    <div className="flex-shrink-0 size-10 rounded-full bg-white/10" />
-
-                    {/* Content Skeleton */}
-                    <div className="flex-1 min-w-0">
-                        {/* Type Badge Skeleton */}
-                        <div className="flex items-center gap-1.5 mb-2">
-                            <div className="h-4 w-20 bg-white/10 rounded" />
-                        </div>
-
-                        {/* Title Skeleton */}
-                        <div className="h-5 w-3/4 bg-white/10 rounded mb-2" />
-
-                        {/* Description Skeleton */}
-                        <div className="space-y-1.5">
-                            <div className="h-3 w-full bg-white/10 rounded" />
-                            <div className="h-3 w-2/3 bg-white/10 rounded" />
-                        </div>
-                    </div>
-
-                    {/* Arrow Skeleton */}
-                    <div className="flex-shrink-0 size-8 rounded bg-white/5" />
-                </div>
-            </div>
-        ))}
-    </div>
-);
