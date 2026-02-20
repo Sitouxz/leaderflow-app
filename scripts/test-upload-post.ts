@@ -27,11 +27,11 @@ function mockFetch(url: string | Request | URL, options?: RequestInit): Promise<
 // Helper to run tests
 async function runTests() {
     console.log('Running UploadPostService Tests...');
-    
+
     // Setup Mock
     global.fetch = mockFetch as any;
 
-    const service = new UploadPostService({ apiKey: 'test-api-key' });
+    const service = new UploadPostService({ apiKey: 'test-api-key', username: 'test-user' });
 
     try {
         // Test 1: List Scheduled Posts
@@ -51,7 +51,7 @@ async function runTests() {
         // Test 2: Create Scheduled Post
         console.log('\nTest 2: Create Scheduled Post');
         // Mock fetch for image download
-        mockResponses.push({ ok: true }); 
+        mockResponses.push({ ok: true });
         // Mock fetch for upload API
         mockResponses.push({
             ok: true,

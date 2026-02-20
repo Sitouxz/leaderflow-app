@@ -1,7 +1,7 @@
 'use server'
 
 import { AI_CONFIG } from '@/services/aiConfig';
-import { AngleType, GeneratedAngle } from '@/services/mockOpenAI';
+import { AngleType, GeneratedAngle } from '@/types/pipeline';
 import { getBrandProfile } from '@/services/brandService';
 
 // ... interface definitions ...

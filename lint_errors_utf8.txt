@@ -1,0 +1,258 @@
+
+> leaderflow-app@0.1.0 lint
+> eslint
+
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\scripts\test-upload-post.ts
+    6:5   error    'mockResponses' is never reassigned. Use 'const' instead  prefer-const
+    6:20  error    Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+    8:49  warning  'options' is defined but never used                       @typescript-eslint/no-unused-vars
+   32:33  error    Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  101:21  error    Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+  132:21  error    Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\actions\openai.ts
+    9:38  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+   25:11  warning  'OpenAIMessage' is defined but never used  @typescript-eslint/no-unused-vars
+  122:46  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  175:21  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  219:21  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  274:21  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  333:21  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+  400:21  error    Unexpected any. Specify a different type   @typescript-eslint/no-explicit-any
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\actions\socialActions.ts
+  13:55  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  40:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  65:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\app\api\auth\instagram\route.ts
+  5:27  warning  'request' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\app\api\auth\linkedin\callback\route.ts
+  77:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\app\api\auth\linkedin\route.ts
+  5:27  warning  'request' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\app\api\auth\twitter\callback\route.ts
+  63:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\app\api\auth\twitter\route.ts
+  5:27  warning  'request' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\app\layout.tsx
+  32:9  warning  Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font  @next/next/no-page-custom-font
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\components\AISettingsPanel.tsx
+  36:9  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\components\AISettingsPanel.tsx:36:9
+  34 |         const existingOpenAI = getOpenAIKey();
+  35 |         const existingGoogle = getGoogleAIKey();
+> 36 |         setGeminiModel(getGeminiModel());
+     |         ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  37 |         if (existingOpenAI) setOpenAIKey(existingOpenAI);
+  38 |         if (existingGoogle) setGoogleAIKey(existingGoogle);
+  39 |     }, []);  react-hooks/set-state-in-effect
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\components\AngleSelectionScreen.tsx
+  90:22  error  Error: Cannot create components during render
+
+Components created during render will reset their state each time they are created. Declare components outside of render.
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\components\AngleSelectionScreen.tsx:90:22
+  88 |             <div className="flex-1 overflow-auto space-y-3">
+  89 |                 {isLoading ? (
+> 90 |                     <LoadingSkeleton />
+     |                      ^^^^^^^^^^^^^^^ This component is created during render
+  91 |                 ) : (
+  92 |                     angles.map((angle: GeneratedAngle, index: number) => {
+  93 |                         const typeConfig = ANGLE_TYPE_CONFIG[angle.type];
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\components\AngleSelectionScreen.tsx:17:29
+  15 |
+  16 |     // Loading skeleton component
+> 17 |     const LoadingSkeleton = () => (
+     |                             ^^^^^^^
+> 18 |         <div className="space-y-3 animate-pulse">
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 19 |             {[1, 2, 3].map((i) => (
+     …
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 47 |         </div>
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 48 |     );
+     | ^^^^^^ The component is created during render here
+  49 |
+  50 |     return (
+  51 |         <div className="flex flex-col h-full">  react-hooks/static-components
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\components\BottomNav.tsx
+  3:10  warning  'useState' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\components\BrandSettingsPanel.tsx
+  24:9   error  Error: Cannot access variable before it is declared
+
+`loadProfile` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\components\BrandSettingsPanel.tsx:24:9
+  22 |
+  23 |     useEffect(() => {
+> 24 |         loadProfile();
+     |         ^^^^^^^^^^^ `loadProfile` accessed before it is declared
+  25 |     }, []);
+  26 |
+  27 |     const loadProfile = async () => {
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\components\BrandSettingsPanel.tsx:27:5
+  25 |     }, []);
+  26 |
+> 27 |     const loadProfile = async () => {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 28 |         setIsLoading(true);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 29 |         const result = await getBrandProfileAction();
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 30 |         if (result.success && result.data) {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 31 |             // @ts-ignore - Prisma return type includes id/dates, but we just need the data fields
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 32 |             setFormData(result.data);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 33 |         }
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 34 |         setIsLoading(false);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 35 |     };
+     | ^^^^^^^ `loadProfile` is declared here
+  36 |
+  37 |     const handleSave = async () => {
+  38 |         setIsSaving(true);  react-hooks/immutability
+  31:13  error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          @typescript-eslint/ban-ts-comment
+  79:75  error  `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              react/no-unescaped-entities
+  79:78  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              react/no-unescaped-entities
+  79:84  error  `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              react/no-unescaped-entities
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\components\Dashboard.tsx
+   48:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\components\Dashboard.tsx:48:13
+  46 |         const url = new URL(window.location.href);
+  47 |         if (url.searchParams.get('settings') === 'social') {
+> 48 |             setShowSocialSettings(true);
+     |             ^^^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  49 |             // Clean up URL
+  50 |             window.history.replaceState({}, '', '/');
+  51 |         }  react-hooks/set-state-in-effect
+  307:63  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @next/next/no-img-element
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\components\MediaReviewScreen.tsx
+  116:29  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  132:45  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\components\SchedulingScreen.tsx
+  115:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\components\SocialAccountsPanel.tsx
+   4:35  warning  'saveSocialAccountAction' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+  20:9   error    Error: Cannot access variable before it is declared
+
+`loadAccounts` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\components\SocialAccountsPanel.tsx:20:9
+  18 |
+  19 |     useEffect(() => {
+> 20 |         loadAccounts();
+     |         ^^^^^^^^^^^^ `loadAccounts` accessed before it is declared
+  21 |     }, []);
+  22 |
+  23 |     const loadAccounts = async () => {
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\components\SocialAccountsPanel.tsx:23:5
+  21 |     }, []);
+  22 |
+> 23 |     const loadAccounts = async () => {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 24 |         setIsLoading(true);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 25 |         const result = await getSocialAccountsAction();
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 26 |         if (result.success && result.data) {
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 27 |             setAccounts(result.data as SocialAccount[]);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 28 |         }
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 29 |         setIsLoading(false);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 30 |     };
+     | ^^^^^^^ `loadAccounts` is declared here
+  31 |
+  32 |     const handleConnect = (platform: string) => {
+  33 |         setIsConnecting(platform);  react-hooks/immutability
+  35:9   error    Error: This value cannot be modified
+
+Modifying a variable defined outside a component or hook is not allowed. Consider using an effect.
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\components\SocialAccountsPanel.tsx:35:9
+  33 |         setIsConnecting(platform);
+  34 |         // Redirect to our OAuth initiation route
+> 35 |         window.location.href = `/api/auth/${platform}`;
+     |         ^^^^^^^^^^^^^^^ value cannot be modified
+  36 |     };
+  37 |
+  38 |     const handleDelete = async (platform: string) => {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react-hooks/immutability
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\lib\scheduler\cron.ts
+   35:39  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+   91:33  error  Unexpected any. Specify a different type                                                                             @typescript-eslint/no-explicit-any
+  132:5   error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\lib\scheduler\instagram.ts
+  113:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\lib\scheduler\linkedin.ts
+  44:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\lib\scheduler\twitter.ts
+  31:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\lib\scheduler\uploadPostService.test.ts
+  35:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  70:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  86:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\lib\scheduler\uploadPostService.ts
+   86:48  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  394:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\services\geminiService.ts
+   45:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   90:25  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  273:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  297:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\services\mockMediaDesign.ts
+  63:27  warning  '_angle' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\Works\Neu Entity\Leader Thought\appv1\leaderflow-app\src\services\socialService.ts
+   9:14  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  11:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  31:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 58 problems (45 errors, 13 warnings)
+  1 error and 0 warnings potentially fixable with the `--fix` option.
+

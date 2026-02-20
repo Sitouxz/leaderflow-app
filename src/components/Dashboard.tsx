@@ -38,18 +38,22 @@ export default function Dashboard() {
     const [showSettings, setShowSettings] = useState(false);
     const [showAISettings, setShowAISettings] = useState(false);
     const [showBrandSettings, setShowBrandSettings] = useState(false);
-    const [showSocialSettings, setShowSocialSettings] = useState(false);
+    const [showSocialSettings, setShowSocialSettings] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            return url.searchParams.get('settings') === 'social';
+        }
+        return false;
+    });
     const [activeTab, setActiveTab] = useState<NavTab>('capture');
 
     // Handle OAuth Redirect auto-open
     useEffect(() => {
-        const url = new URL(window.location.href);
-        if (url.searchParams.get('settings') === 'social') {
-            setShowSocialSettings(true);
+        if (showSocialSettings) {
             // Clean up URL
             window.history.replaceState({}, '', '/');
         }
-    }, []);
+    }, [showSocialSettings]);
 
     const liveCount = items.filter(item => item.status !== 'scheduled').length;
     const scheduledItems = items.filter(item => item.status === 'scheduled');
@@ -265,7 +269,7 @@ export default function Dashboard() {
                                 </div>
                                 <div className="text-center max-w-sm">
                                     <h3 className="text-white text-lg font-semibold mb-2">{currentItem.selectedAngle}</h3>
-                                    <p className="text-white/50 text-sm mb-4">Successfully posted to social media!</p>
+                                    <p className="text-white/40 text-xs mt-1">Ready to be published on your brand&apos;s active channels</p>
                                     {currentItem.socialPost && (
                                         <div className="flex flex-wrap justify-center gap-2">
                                             {currentItem.socialPost.platforms.map(p => (

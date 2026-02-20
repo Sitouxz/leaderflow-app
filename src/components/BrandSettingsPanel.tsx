@@ -20,19 +20,18 @@ export default function BrandSettingsPanel({ onBack }: BrandSettingsPanelProps) 
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState('');
 
-    useEffect(() => {
-        loadProfile();
-    }, []);
-
     const loadProfile = async () => {
         setIsLoading(true);
         const result = await getBrandProfileAction();
         if (result.success && result.data) {
-            // @ts-ignore - Prisma return type includes id/dates, but we just need the data fields
-            setFormData(result.data);
+            setFormData(result.data as any);
         }
         setIsLoading(false);
     };
+
+    useEffect(() => {
+        loadProfile();
+    }, []);
 
     const handleSave = async () => {
         setIsSaving(true);
@@ -75,10 +74,7 @@ export default function BrandSettingsPanel({ onBack }: BrandSettingsPanelProps) 
                         <span className="material-symbols-outlined text-indigo-400" style={{ fontSize: '24px' }}>psychology</span>
                         <div>
                             <h4 className="text-white font-medium mb-1">Personalize your AI</h4>
-                            <p className="text-white/60 text-sm">
-                                These details will be injected into the AI's "brain".
-                                It will generate ideas and content that sound like you.
-                            </p>
+                            <p className="text-white/40 text-sm italic">You can use your brand&apos;s &quot;tone of voice&quot; or &quot;personality&quot; to guide the AI. These details will be injected into the AI&apos;s &quot;brain&quot;. It will generate ideas and content that sound like you.</p>
                         </div>
                     </div>
                 </div>
@@ -131,8 +127,8 @@ export default function BrandSettingsPanel({ onBack }: BrandSettingsPanelProps) 
                                         key={tone}
                                         onClick={() => handleChange('toneOfVoice', tone === 'Custom' ? '' : tone)}
                                         className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all ${(tone === 'Custom' && !tones.includes(formData.toneOfVoice)) || formData.toneOfVoice === tone
-                                                ? 'bg-primary/20 border-primary text-white'
-                                                : 'bg-surface-dark border-white/5 text-white/60 hover:bg-white/5'
+                                            ? 'bg-primary/20 border-primary text-white'
+                                            : 'bg-surface-dark border-white/5 text-white/60 hover:bg-white/5'
                                             }`}
                                     >
                                         {tone}

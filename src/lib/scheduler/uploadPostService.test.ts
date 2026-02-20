@@ -20,7 +20,7 @@ describe('UploadPostService', () => {
     const mockApiKey = 'test-api-key';
 
     beforeEach(() => {
-        service = new UploadPostService({ apiKey: mockApiKey });
+        service = new UploadPostService({ apiKey: mockApiKey, username: 'test-user' });
         jest.clearAllMocks();
     });
 
@@ -84,7 +84,7 @@ describe('UploadPostService', () => {
 
     it('should throw error if file is missing and cannot fallback', async () => {
         jest.spyOn(service as any, 'resolveFile').mockResolvedValue(new Blob([], { type: '' }));
-        
+
         const content = {
             type: 'image',
             imageUrl: 'invalid-url',

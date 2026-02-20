@@ -194,9 +194,14 @@ export class UploadPostService {
             }
 
             // Add common fields
-            const title = content.caption ? content.caption.substring(0, 50) : 'New Post';
+            // Use a much larger limit for title as some platforms (FB) use it as the main content
+            const title = content.caption ? content.caption.substring(0, 1000) : 'New Post';
             formData.append('title', title);
-            formData.append('caption', `${content.caption}\n\n${content.hashtags.map(t => t.startsWith('#') ? t : '#' + t).join(' ')}`);
+
+            const fullCaption = `${content.caption}\n\n${content.hashtags.map(t => t.startsWith('#') ? t : '#' + t).join(' ')}`;
+            formData.append('caption', fullCaption);
+
+            console.log(`[UploadPost] Constructing payload - Title: "${title.substring(0, 30)}...", Caption: "${fullCaption.substring(0, 30)}..."`);
             const isoDate = finalDate.toISOString().split('.')[0] + 'Z';
             formData.append('scheduled_date', isoDate);
             formData.append('timezone', 'UTC');

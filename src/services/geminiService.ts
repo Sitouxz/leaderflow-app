@@ -7,7 +7,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { AI_CONFIG, getGoogleAIKey, getGeminiConfig } from './aiConfig';
 import { MediaType, MediaContent } from '@/types/pipeline';
-import { generateMediaContent as mockGenerateMedia, regenerateWithFeedback as mockRegenerate } from './mockMediaDesign';
 import { generateVideoBrief, generateSocialContent, generateImageGenPrompt } from './openaiService';
 
 
@@ -117,10 +116,9 @@ export async function generateMediaContent(
 ): Promise<MediaContent> {
     const apiKey = getGoogleAIKey();
 
-    // Fall back to mock if no API key
     if (!apiKey) {
-        console.log('[Gemini] No API key configured, using mock service');
-        return mockGenerateMedia(selectedAngle, mediaType);
+        console.error('[Gemini] No API key configured');
+        throw new Error('Google AI / Gemini API key not configured. Please check your settings.');
     }
 
     try {
@@ -213,24 +211,10 @@ export async function generateMediaContent(
             return content;
         }
 
-        // Fall back to mock if image generation failed
-        console.log('[Gemini] Image generation failed, using mock with AI-generated text');
-        const mockContent = await mockGenerateMedia(selectedAngle, mediaType);
-        return {
-            ...mockContent,
-            caption,
-            description,
-            hashtags,
-        };
-
+        // If we didn't get an image URL or it failed
+        throw new Error('Gemini image generation failed to return a valid result.');
     } catch (error) {
         console.error('[Gemini] Service error:', error);
-
-        if (AI_CONFIG.useMockFallback) {
-            console.log('[Gemini] Falling back to mock service');
-            return mockGenerateMedia(selectedAngle, mediaType);
-        }
-
         throw error;
     }
 }
@@ -246,7 +230,7 @@ export async function regenerateWithFeedback(
     const apiKey = getGoogleAIKey();
 
     if (!apiKey) {
-        return mockRegenerate(selectedAngle, mediaType, feedback);
+        throw new Error('Google AI / Gemini API key not configured.');
     }
 
     // Incorporate feedback into the prompt

@@ -20,22 +20,18 @@ interface AISettingsPanelProps {
 type ConnectionStatus = 'idle' | 'testing' | 'success' | 'error';
 
 export default function AISettingsPanel({ onBack }: AISettingsPanelProps) {
-    const [openAIKey, setOpenAIKey] = useState('');
-    const [googleAIKey, setGoogleAIKey] = useState('');
+    const [openAIKey, setOpenAIKey] = useState(() => getOpenAIKey() || '');
+    const [googleAIKey, setGoogleAIKey] = useState(() => getGoogleAIKey() || '');
     const [openAIStatus, setOpenAIStatus] = useState<ConnectionStatus>('idle');
     const [googleAIStatus, setGoogleAIStatus] = useState<ConnectionStatus>('idle');
     const [statusMessage, setStatusMessage] = useState('');
     const [showOpenAIKey, setShowOpenAIKey] = useState(false);
     const [showGoogleAIKey, setShowGoogleAIKey] = useState(false);
-    const [geminiModel, setGeminiModel] = useState<GeminiModel>('gemini-2.5-flash-image');
+    const [geminiModel, setGeminiModel] = useState<GeminiModel>(() => getGeminiModel());
 
-    // Load existing keys on mount
+    // Connection testing is handled via user action, no mount effect needed for keys anymore
     useEffect(() => {
-        const existingOpenAI = getOpenAIKey();
-        const existingGoogle = getGoogleAIKey();
-        setGeminiModel(getGeminiModel());
-        if (existingOpenAI) setOpenAIKey(existingOpenAI);
-        if (existingGoogle) setGoogleAIKey(existingGoogle);
+        // Any other side effects on mount if needed
     }, []);
 
     const handleSaveOpenAI = async () => {

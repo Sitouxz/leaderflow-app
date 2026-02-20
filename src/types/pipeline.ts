@@ -11,6 +11,22 @@ export type PipelineStatus =
 
 export type MediaType = 'infographic' | 'carousel' | 'image' | 'video';
 
+export type AngleType = 'deep_dive' | 'strategic_framework' | 'provocative' | 'tactical' | 'visionary';
+
+export interface GeneratedAngle {
+    title: string;
+    type: AngleType;
+    description: string;
+}
+
+export const ANGLE_TYPE_CONFIG: Record<AngleType, { label: string; icon: string; color: string }> = {
+    deep_dive: { label: 'Deep Dive', icon: 'search', color: 'text-blue-400' },
+    strategic_framework: { label: 'Strategic Framework', icon: 'account_tree', color: 'text-emerald-400' },
+    provocative: { label: 'Provocative Statement', icon: 'bolt', color: 'text-orange-400' },
+    tactical: { label: 'Tactical Insight', icon: 'target', color: 'text-purple-400' },
+    visionary: { label: 'Visionary Outlook', icon: 'visibility', color: 'text-cyan-400' },
+};
+
 export type GenerationType = 'ai' | 'human';
 
 export const MEDIA_TYPE_CONFIG: Record<MediaType, {
@@ -68,7 +84,7 @@ export type PipelineItem = {
     createdAt: Date;
 
     // Stage 1
-    angles?: import('@/services/mockOpenAI').GeneratedAngle[];
+    angles?: GeneratedAngle[];
     selectedAngle?: string;
 
     // Stage 2

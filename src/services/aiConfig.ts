@@ -12,7 +12,7 @@ export const AI_CONFIG = {
     gemini: {
         defaultModel: 'gemini-2.5-flash-image' as const,
     },
-    useMockFallback: false,
+},
 };
 
 export type GeminiModel = 'gemini-2.5-flash-image' | 'gemini-3-pro-image-preview';

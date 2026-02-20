@@ -16,10 +16,6 @@ export default function SocialAccountsPanel({ onBack }: { onBack: () => void }) 
     const [isLoading, setIsLoading] = useState(true);
     const [isConnecting, setIsConnecting] = useState<string | null>(null);
 
-    useEffect(() => {
-        loadAccounts();
-    }, []);
-
     const loadAccounts = async () => {
         setIsLoading(true);
         const result = await getSocialAccountsAction();
@@ -28,6 +24,10 @@ export default function SocialAccountsPanel({ onBack }: { onBack: () => void }) 
         }
         setIsLoading(false);
     };
+
+    useEffect(() => {
+        loadAccounts();
+    }, []);
 
     const handleConnect = (platform: string) => {
         setIsConnecting(platform);

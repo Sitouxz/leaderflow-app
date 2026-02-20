@@ -17,13 +17,16 @@ export async function runScheduler() {
             if (externalPosts.length > 0) {
                 console.log(`[Scheduler] Checking status for ${externalPosts.length} external jobs...`);
                 try {
-                    const service = new UploadPostService({ apiKey: process.env.UPLOAD_POST_API_KEY });
+                    const service = new UploadPostService({
+                        apiKey: process.env.UPLOAD_POST_API_KEY,
+                        username: process.env.UPLOAD_POST_USERNAME || ''
+                    });
                     for (const post of externalPosts) {
                         try {
                             const statusData = await service.getJobStatus(post.externalJobId!);
                             // The API might return different status strings. Adjust as needed.
                             const status = statusData.status?.toLowerCase();
-                            
+
                             if (status === 'published' || status === 'completed' || status === 'success') {
                                 await updatePostStatus(post.id, 'success');
                                 console.log(`[Scheduler] External job ${post.externalJobId} completed.`);

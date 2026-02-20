@@ -4,7 +4,8 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 import { PipelineItem, PipelineStatus, MediaType } from '@/types/pipeline';
 import { generateStrategicAngles } from '@/services/openaiService';
 import { generateMediaContent, regenerateWithFeedback } from '@/services/geminiService';
-import { generateSocialPost } from '@/services/mockSocialPost';
+// Social generation is now handled within scheduling flow or via real actions if ready
+// but keeping the call structure generic.
 
 interface PipelineContextType {
     items: PipelineItem[];
@@ -32,65 +33,7 @@ interface PipelineContextType {
 const PipelineContext = createContext<PipelineContextType | undefined>(undefined);
 
 export function PipelineProvider({ children }: { children: React.ReactNode }) {
-    const [items, setItems] = useState<PipelineItem[]>([
-        // Demo items showing different stages
-        {
-            id: 'demo-1',
-            rawInput: 'Q3 growth strategy for enterprise market',
-            selectedAngle: 'Strategic Planning for Q3 Growth',
-            status: 'media_selection',
-            createdAt: new Date(),
-        },
-        {
-            id: 'demo-2',
-            rawInput: 'Leadership principles for scaling organizations',
-            selectedAngle: 'Building High-Performance Teams',
-            selectedMediaType: 'carousel',
-            mediaContent: {
-                type: 'carousel',
-                imageUrl: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80',
-                previewUrls: [
-                    'https://images.unsplash.com/photo-1553877522-43269d4ea984?w=800&q=80',
-                    'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80',
-                    'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=800&q=80',
-                ],
-                caption: `🔄 Swipe through for the complete framework →
-
-Building High-Performance Teams
-
-The most successful leaders understand that growth comes from continuous learning and adaptation.
-
-Here's what I've learned after years of building and scaling teams - and why I believe this approach makes all the difference.
-
-💬 What's your experience with this? Share your thoughts below!
-
-⤵️ Save this for later | 🔄 Share with your network`,
-                description: 'In this carousel, I break down the key principles behind "Building High-Performance Teams". This framework has helped countless leaders transform their approach.',
-                hashtags: ['#Leadership', '#TeamBuilding', '#HighPerformance', '#Management', '#GrowthMindset'],
-            },
-            status: 'media_review',
-            createdAt: new Date(Date.now() - 3600000),
-        },
-        {
-            id: 'demo-3',
-            rawInput: 'AI transformation in enterprise',
-            selectedAngle: 'The Future of AI in Business',
-            selectedMediaType: 'image',
-            mediaContent: {
-                type: 'image',
-                imageUrl: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&q=80',
-                caption: '💡 The Future of AI in Business\n\nThe most successful leaders understand that AI is not about replacement...',
-                description: 'Exploring how AI is transforming modern business practices.',
-                hashtags: ['#AI', '#Leadership', '#Innovation', '#FutureOfWork', '#BusinessStrategy'],
-            },
-            socialPost: {
-                platforms: ['linkedin', 'twitter'],
-                scheduledTime: new Date(Date.now() + 3600000),
-            },
-            status: 'scheduled',
-            createdAt: new Date(Date.now() - 86400000),
-        },
-    ]);
+    const [items, setItems] = useState<PipelineItem[]>([]);
     const [currentItem, setCurrentItem] = useState<PipelineItem | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -166,11 +109,13 @@ Here's what I've learned after years of building and scaling teams - and why I b
         setIsLoading(true);
 
         try {
-            const socialPost = await generateSocialPost(
-                item.selectedAngle,
-                item.selectedMediaType,
-                ['linkedin', 'twitter', 'instagram']
-            );
+            // In a production app, this would call a real content verification or platform-specific check
+            // For now, we move directly to scheduling stage with default platforms
+            const socialPost = {
+                platforms: ['linkedin', 'twitter', 'instagram'],
+                scheduledTime: new Date(Date.now() + 3600000), // Default 1 hour delay
+            };
+
             updateItem(itemId, {
                 socialPost,
                 status: 'scheduling' as PipelineStatus

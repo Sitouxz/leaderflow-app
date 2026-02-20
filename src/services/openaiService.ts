@@ -5,7 +5,7 @@
  */
 
 import { AI_CONFIG, getOpenAIKey } from './aiConfig';
-import { generateStrategicAngles as mockGenerateAngles, GeneratedAngle, AngleType, ANGLE_TYPE_CONFIG } from './mockOpenAI';
+import { GeneratedAngle, AngleType, ANGLE_TYPE_CONFIG } from '@/types/pipeline';
 import {
     generateStrategicAnglesAction,
     generateVideoBriefAction,
@@ -66,10 +66,9 @@ export async function transcribeAudio(audioBlob: Blob): Promise<string> {
 export async function generateStrategicAngles(rawInput: string): Promise<GeneratedAngle[]> {
     const apiKey = getOpenAIKey();
 
-    // Fall back to mock if no API key configured
     if (!apiKey) {
-        console.log('[OpenAI] No API key configured, using mock service');
-        return mockGenerateAngles(rawInput);
+        console.error('[OpenAI] No API key configured');
+        throw new Error('OpenAI API key not configured. Please check your settings.');
     }
 
     try {
@@ -78,23 +77,12 @@ export async function generateStrategicAngles(rawInput: string): Promise<Generat
 
         if (!result.success || !result.data) {
             console.error('[OpenAI] Server action failed:', result.error);
-            // Fall back to mock on API error if configured
-            if (AI_CONFIG.useMockFallback) {
-                console.log('[OpenAI] Falling back to mock service');
-                return mockGenerateAngles(rawInput);
-            }
             throw new Error(result.error || 'Unknown error');
         }
 
         return result.data;
     } catch (error) {
         console.error('[OpenAI] Service error:', error);
-
-        // Fall back to mock on any error if configured
-        if (AI_CONFIG.useMockFallback) {
-            console.log('[OpenAI] Falling back to mock service due to error');
-            return mockGenerateAngles(rawInput);
-        }
 
         throw error;
     }
