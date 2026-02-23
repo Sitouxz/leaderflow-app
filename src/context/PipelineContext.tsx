@@ -12,9 +12,11 @@ interface PipelineContextType {
     items: PipelineItem[];
     currentItem: PipelineItem | null;
     isLoading: boolean;
+    error: string | null;
 
     // Stage 1: Ideation
     startCapture: (rawInput: string) => Promise<void>;
+    regenerateAngles: (itemId: string) => Promise<void>;
     selectAngle: (itemId: string, angle: string) => void;
 
     // Stage 2: Media
@@ -40,6 +42,7 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
     const [items, setItems] = useState<PipelineItem[]>([]);
     const [currentItem, setCurrentItem] = useState<PipelineItem | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     // Initial fetch from DB
     useEffect(() => {
@@ -84,6 +87,7 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
     // Stage 1: Start capture and generate angles
     const startCapture = useCallback(async (rawInput: string) => {
         setIsLoading(true);
+        setError(null);
 
         const newItem: PipelineItem = {
             id: `item-${Date.now()}`,
@@ -98,12 +102,33 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
         try {
             const angles = await generateStrategicAngles(rawInput);
             updateItem(newItem.id, { angles });
-        } catch (error) {
-            console.error('Failed to generate angles:', error);
+        } catch (err: any) {
+            console.error('Failed to generate angles:', err);
+            setError(err.message || 'Failed to generate angles. Please check your API key and try again.');
         } finally {
             setIsLoading(false);
         }
     }, []);
+
+    // Regenerate angles for an existing item
+    const regenerateAngles = useCallback(async (itemId: string) => {
+        const item = items.find(i => i.id === itemId);
+        if (!item) return;
+
+        setIsLoading(true);
+        setError(null);
+        updateItem(itemId, { angles: undefined });
+
+        try {
+            const angles = await generateStrategicAngles(item.rawInput);
+            updateItem(itemId, { angles });
+        } catch (err: any) {
+            console.error('Failed to regenerate angles:', err);
+            setError(err.message || 'Failed to generate angles. Please check your API key and try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [items]);
 
     // Stage 1 → Stage 2: Select angle, move to media selection
     const selectAngle = useCallback((itemId: string, angle: string) => {
@@ -232,7 +257,9 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
                 items,
                 currentItem,
                 isLoading,
+                error,
                 startCapture,
+                regenerateAngles,
                 selectAngle,
                 selectMediaType,
                 approveMedia,

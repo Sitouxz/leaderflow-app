@@ -7,7 +7,9 @@ import { PipelineItem } from '@/types/pipeline';
 interface IdeationStageProps {
     item: PipelineItem;
     isLoading: boolean;
+    error: string | null;
     onSelectAngle: (angle: string) => void;
+    onRegenerate: () => void;
     onBack: () => void;
     onSettingsClick: () => void;
 }
@@ -15,7 +17,9 @@ interface IdeationStageProps {
 export default function IdeationStage({
     item,
     isLoading,
+    error,
     onSelectAngle,
+    onRegenerate,
     onBack,
     onSettingsClick
 }: IdeationStageProps) {
@@ -24,8 +28,10 @@ export default function IdeationStage({
             <AngleSelectionScreen
                 item={item}
                 onSelectAngle={onSelectAngle}
+                onRegenerate={onRegenerate}
                 onBack={onBack}
                 isLoading={isLoading}
+                error={error}
             />
         </div>
     );

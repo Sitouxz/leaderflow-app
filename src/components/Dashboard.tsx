@@ -29,7 +29,9 @@ export default function Dashboard() {
         items,
         currentItem,
         isLoading,
+        error,
         startCapture,
+        regenerateAngles,
         selectAngle,
         selectMediaType,
         approveMedia,
@@ -107,7 +109,7 @@ export default function Dashboard() {
         if (currentItem) {
             switch (currentItem.status) {
                 case 'ideation':
-                    return <IdeationStage item={currentItem} isLoading={isLoading} onSelectAngle={(angle) => selectAngle(currentItem.id, angle)} onBack={() => setCurrentItem(null)} onSettingsClick={() => setShowSettings(true)} />;
+                    return <IdeationStage item={currentItem} isLoading={isLoading} error={error} onSelectAngle={(angle) => selectAngle(currentItem.id, angle)} onRegenerate={() => regenerateAngles(currentItem.id)} onBack={() => setCurrentItem(null)} onSettingsClick={() => setShowSettings(true)} />;
                 case 'media_selection':
                     return <MediaSelectionStage item={currentItem} onSelectType={(type) => selectMediaType(currentItem.id, type)} onBack={() => setCurrentItem(null)} />;
                 case 'media_generating':

@@ -7,11 +7,13 @@ import { AngleSkeleton } from '@/components/Skeleton';
 interface AngleSelectionScreenProps {
     item: PipelineItem;
     onSelectAngle: (angle: string) => void;
+    onRegenerate: () => void;
     onBack: () => void;
     isLoading?: boolean;
+    error?: string | null;
 }
 
-export default function AngleSelectionScreen({ item, onSelectAngle, onBack, isLoading }: AngleSelectionScreenProps) {
+export default function AngleSelectionScreen({ item, onSelectAngle, onRegenerate, onBack, isLoading, error }: AngleSelectionScreenProps) {
     const angles = item.angles || [];
 
     return (
@@ -39,6 +41,19 @@ export default function AngleSelectionScreen({ item, onSelectAngle, onBack, isLo
                     <p className="text-white/80 text-sm">{item.rawInput}</p>
                 </div>
             </div>
+
+            {/* Error Message */}
+            {error && !isLoading && (
+                <div className="mb-4 bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+                    <div className="flex items-start gap-3">
+                        <span className="material-symbols-outlined text-red-400 flex-shrink-0" style={{ fontSize: '20px' }}>error</span>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-red-300 text-sm font-medium mb-1">Failed to generate angles</p>
+                            <p className="text-red-300/70 text-xs">{error}</p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Loading Indicator */}
             {isLoading && (
@@ -109,7 +124,11 @@ export default function AngleSelectionScreen({ item, onSelectAngle, onBack, isLo
             </div>
 
             {/* Regenerate Button */}
-            <button className="mt-4 w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white font-medium transition-all flex items-center justify-center gap-2">
+            <button
+                onClick={onRegenerate}
+                disabled={isLoading}
+                className="mt-4 w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
                 <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>refresh</span>
                 Generate New Angles
             </button>
