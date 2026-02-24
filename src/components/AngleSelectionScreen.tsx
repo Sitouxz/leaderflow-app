@@ -49,7 +49,14 @@ export default function AngleSelectionScreen({ item, onSelectAngle, onRegenerate
                         <span className="material-symbols-outlined text-red-400 flex-shrink-0" style={{ fontSize: '20px' }}>error</span>
                         <div className="flex-1 min-w-0">
                             <p className="text-red-300 text-sm font-medium mb-1">Failed to generate angles</p>
-                            <p className="text-red-300/70 text-xs">{error}</p>
+                            <p className="text-red-300/70 text-xs mb-3">{error}</p>
+                            <button
+                                onClick={onRegenerate}
+                                className="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-red-300 text-xs font-medium transition-colors flex items-center gap-1.5"
+                            >
+                                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>refresh</span>
+                                Try Again
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -74,7 +81,7 @@ export default function AngleSelectionScreen({ item, onSelectAngle, onRegenerate
                         <AngleSkeleton />
                         <AngleSkeleton />
                     </div>
-                ) : (
+                ) : angles.length > 0 ? (
                     angles.map((angle: GeneratedAngle, index: number) => {
                         const typeConfig = ANGLE_TYPE_CONFIG[angle.type];
                         return (
@@ -120,6 +127,15 @@ export default function AngleSelectionScreen({ item, onSelectAngle, onRegenerate
                             </button>
                         );
                     })
+                ) : !error && (
+                    <div className="flex flex-col items-center justify-center py-10 text-center">
+                        <div className="size-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                            <span className="material-symbols-outlined text-white/20" style={{ fontSize: '32px' }}>psychology</span>
+                        </div>
+                        <p className="text-white/40 text-sm max-w-[200px]">
+                            No angles generated yet. Click the button below to start.
+                        </p>
+                    </div>
                 )}
             </div>
 

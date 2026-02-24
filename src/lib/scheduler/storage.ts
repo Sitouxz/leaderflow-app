@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { prisma, withRetry } from '@/lib/prisma';
 import { MediaContent } from '@/types/pipeline';
 
 // Re-export interface for compatibility but id/status might be slightly different in Prisma (String vs enum)
@@ -17,9 +17,10 @@ export interface ScheduledPost {
 // Read all posts
 export async function getScheduledPosts(): Promise<ScheduledPost[]> {
     try {
-        const posts = await prisma.scheduledPost.findMany({
+        // Use withRetry for robust fetching
+        const posts = await withRetry(() => prisma.scheduledPost.findMany({
             orderBy: { createdAt: 'desc' }
-        });
+        }));
 
         return posts.map(post => ({
             id: post.id,
@@ -41,7 +42,7 @@ export async function getScheduledPosts(): Promise<ScheduledPost[]> {
 // Save a new post
 export async function saveScheduledPost(post: Omit<ScheduledPost, 'id' | 'createdAt' | 'status'> & { externalJobId?: string }): Promise<ScheduledPost> {
     try {
-        const newPost = await prisma.scheduledPost.create({
+        const newPost = await withRetry(() => prisma.scheduledPost.create({
             data: {
                 content: JSON.stringify(post.content),
                 platforms: JSON.stringify(post.platforms),
@@ -50,7 +51,7 @@ export async function saveScheduledPost(post: Omit<ScheduledPost, 'id' | 'create
                 brandId: post.brandId || null,
                 externalJobId: post.externalJobId || null,
             }
-        });
+        }));
 
         return {
             id: newPost.id,
@@ -72,13 +73,13 @@ export async function saveScheduledPost(post: Omit<ScheduledPost, 'id' | 'create
 // Update a post status
 export async function updatePostStatus(id: string, status: ScheduledPost['status'], error?: string): Promise<void> {
     try {
-        await prisma.scheduledPost.update({
+        await withRetry(() => prisma.scheduledPost.update({
             where: { id },
             data: {
                 status: status,
                 error: error || null
             }
-        });
+        }));
     } catch (err) {
         console.error(`Failed to update post ${id}:`, err);
     }

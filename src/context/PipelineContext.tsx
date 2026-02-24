@@ -101,10 +101,15 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
 
         try {
             const angles = await generateStrategicAngles(rawInput);
+            if (!angles || angles.length === 0) {
+                throw new Error('No angles were returned from the AI. Please try rephrasing your input.');
+            }
             updateItem(newItem.id, { angles });
         } catch (err: any) {
-            console.error('Failed to generate angles:', err);
-            setError(err.message || 'Failed to generate angles. Please check your API key and try again.');
+            console.error('[PipelineContext] Failed to generate angles:', err);
+            const errorMessage = err.message || 'An unexpected error occurred while generating angles.';
+            setError(errorMessage);
+            // Also update the item status to reflect error if needed, but keeping it in ideation for now
         } finally {
             setIsLoading(false);
         }
@@ -121,9 +126,12 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
 
         try {
             const angles = await generateStrategicAngles(item.rawInput);
+            if (!angles || angles.length === 0) {
+                throw new Error('No angles were returned. Try again or check your settings.');
+            }
             updateItem(itemId, { angles });
         } catch (err: any) {
-            console.error('Failed to regenerate angles:', err);
+            console.error('[PipelineContext] Failed to regenerate angles:', err);
             setError(err.message || 'Failed to generate angles. Please check your API key and try again.');
         } finally {
             setIsLoading(false);
