@@ -12,12 +12,54 @@ interface SocialPreviewProps {
 }
 
 export default function SocialPreview({ type, mediaUrl, caption, hashtags, platforms }: SocialPreviewProps) {
-    const [activePlatform, setActivePlatform] = useState(platforms[0] || 'linkedin');
+    const [activePlatform, setActivePlatform] = useState(platforms.includes('facebook') ? 'facebook' : (platforms[0] || 'linkedin'));
 
     const fullText = `${caption}\n\n${hashtags.map(t => t.startsWith('#') ? t : '#' + t).join(' ')}`;
 
     const renderPreview = () => {
         switch (activePlatform) {
+            case 'facebook':
+                return (
+                    <div className="bg-white rounded-lg overflow-hidden border border-black/10 text-black text-sm max-w-sm mx-auto shadow-xl">
+                        <div className="p-3 flex items-center gap-2">
+                            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xl">f</div>
+                            <div>
+                                <div className="font-bold flex items-center gap-1">
+                                    LeaderFlow AI
+                                    <span className="material-symbols-outlined text-[14px] text-blue-500">verified</span>
+                                </div>
+                                <div className="text-xs text-gray-500">Sponsored • Now • <span className="material-symbols-outlined text-[10px] align-middle">public</span></div>
+                            </div>
+                        </div>
+                        <div className="px-3 mb-3 text-[14px] leading-normal whitespace-pre-wrap line-clamp-4 overflow-hidden">{fullText}</div>
+                        {mediaUrl && (
+                            <div className="relative aspect-video bg-gray-100 border-y border-black/5">
+                                <img src={mediaUrl} alt="Preview" className="w-full h-full object-cover" />
+                            </div>
+                        )}
+                        <div className="p-3 border-b flex justify-between items-center bg-gray-50">
+                            <div className="flex-1">
+                                <div className="text-[12px] text-gray-500 uppercase">LEADERFLOW.AI</div>
+                                <div className="font-bold text-[16px]">Transform your content today</div>
+                            </div>
+                            <button className="bg-gray-200 px-4 py-1.5 rounded-md font-bold text-sm">Learn More</button>
+                        </div>
+                        <div className="p-2 flex justify-around text-gray-500 font-semibold items-center text-xs">
+                            <div className="flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[18px]">thumb_up</span>
+                                Like
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[18px]">chat_bubble_outline</span>
+                                Comment
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[18px]">share</span>
+                                Share
+                            </div>
+                        </div>
+                    </div>
+                );
             case 'linkedin':
                 return (
                     <div className="bg-white rounded-lg overflow-hidden border border-black/10 text-black text-sm max-w-sm mx-auto shadow-xl">
@@ -28,9 +70,9 @@ export default function SocialPreview({ type, mediaUrl, caption, hashtags, platf
                                 <div className="text-xs text-gray-500">Professional • Now</div>
                             </div>
                         </div>
-                        <div className="px-3 pb-3 line-clamp-4 whitespace-pre-wrap">{fullText}</div>
+                        <div className="px-3 mb-3 line-clamp-3 overflow-hidden whitespace-pre-wrap text-[13px] leading-snug">{fullText}</div>
                         {mediaUrl && (
-                            <div className="relative aspect-square bg-gray-100">
+                            <div className="relative aspect-video bg-gray-100">
                                 <img src={mediaUrl} alt="Preview" className="w-full h-full object-cover" />
                             </div>
                         )}
@@ -93,7 +135,11 @@ export default function SocialPreview({ type, mediaUrl, caption, hashtags, platf
                             <div className="font-bold text-xs mb-1">12 likes</div>
                             <div className="text-xs">
                                 <span className="font-bold mr-2">leaderflow_app</span>
-                                {caption.substring(0, 100)}... <span className="text-gray-400">more</span>
+                                {caption.length > 100 ? (
+                                    <>
+                                        {caption.substring(0, 100)}... <span className="text-gray-400">more</span>
+                                    </>
+                                ) : caption}
                             </div>
                         </div>
                     </div>

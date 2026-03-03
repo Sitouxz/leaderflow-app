@@ -4,9 +4,12 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import { PipelineItem, PipelineStatus, MediaType } from '@/types/pipeline';
 import { generateStrategicAngles } from '@/services/openaiService';
 import { generateMediaContent, regenerateWithFeedback } from '@/services/geminiService';
-import { schedulePostAction, getScheduledPostsAction } from '@/actions/socialActions';
-// Social generation is now handled within scheduling flow or via real actions if ready
-// but keeping the call structure generic.
+import { schedulePostAction } from '@/actions/socialActions';
+import {
+    savePipelineAction,
+    getPipelinesAction,
+    deletePipelineAction
+} from '@/actions/pipelineActions';
 
 interface PipelineContextType {
     items: PipelineItem[];
@@ -34,6 +37,7 @@ interface PipelineContextType {
 
     // Navigation
     setCurrentItem: (item: PipelineItem | null) => void;
+    deleteItem: (itemId: string) => Promise<void>;
 }
 
 const PipelineContext = createContext<PipelineContextType | undefined>(undefined);
@@ -46,51 +50,57 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
 
     // Initial fetch from DB
     useEffect(() => {
-        const fetchPosts = async () => {
+        const fetchAll = async () => {
             setIsLoading(true);
             try {
-                const result = await getScheduledPostsAction();
+                const result = await getPipelinesAction();
                 if (result.success && result.data) {
-                    const dbItems: PipelineItem[] = result.data.map((post: any) => ({
-                        id: post.id,
-                        rawInput: 'Imported from database', // Raw input isn't stored in DB currently
-                        status: 'scheduled' as PipelineStatus,
-                        createdAt: new Date(post.createdAt),
-                        selectedAngle: post.content.title || 'Imported Post',
-                        selectedMediaType: post.content.type as MediaType,
-                        mediaContent: post.content,
-                        socialPost: {
-                            platforms: post.platforms,
-                            scheduledTime: new Date(post.scheduledTime)
-                        }
-                    }));
-                    setItems(dbItems);
+                    setItems(result.data);
                 }
             } catch (error) {
-                console.error('Failed to initial fetch posts:', error);
+                console.error('Failed to initial fetch pipelines:', error);
             } finally {
                 setIsLoading(false);
             }
         };
 
-        fetchPosts();
+        fetchAll();
     }, []);
 
-    // Helper to update item
-    const updateItem = (itemId: string, updates: Partial<PipelineItem>) => {
-        setItems(prev => prev.map(item =>
-            item.id === itemId ? { ...item, ...updates } : item
-        ));
-        setCurrentItem(prev => prev?.id === itemId ? { ...prev, ...updates } : prev);
-    };
+
+    // Helper to update item and sync to DB
+    // Use functional updates to avoid stale closures
+    const updateItem = useCallback(async (itemId: string, updates: Partial<PipelineItem>) => {
+        setItems(prev => prev.map(item => {
+            if (item.id === itemId) {
+                return { ...item, ...updates };
+            }
+            return item;
+        }));
+
+        setCurrentItem(prev => {
+            if (prev?.id === itemId) {
+                return { ...prev, ...updates };
+            }
+            return prev;
+        });
+
+        // Persist to DB
+        try {
+            await savePipelineAction({ id: itemId, ...updates });
+        } catch (e) {
+            console.error('Failed to sync update to DB:', e);
+        }
+    }, []);
 
     // Stage 1: Start capture and generate angles
     const startCapture = useCallback(async (rawInput: string) => {
         setIsLoading(true);
         setError(null);
 
+        const tempId = `item-${Date.now()}`;
         const newItem: PipelineItem = {
-            id: `item-${Date.now()}`,
+            id: tempId,
             rawInput,
             status: 'ideation',
             createdAt: new Date(),
@@ -100,58 +110,85 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
         setCurrentItem(newItem);
 
         try {
+            const saveResult = await savePipelineAction(newItem);
+            const realId = saveResult.success && saveResult.data ? saveResult.data.id : tempId;
+
+            if (realId !== tempId) {
+                setItems(prev => prev.map(i => i.id === tempId ? { ...i, id: realId } : i));
+                setCurrentItem(prev => (prev?.id === tempId ? { ...prev, id: realId } : prev));
+            }
+
             const angles = await generateStrategicAngles(rawInput);
             if (!angles || angles.length === 0) {
-                throw new Error('No angles were returned from the AI. Please try rephrasing your input.');
+                throw new Error('No angles were returned from the AI.');
             }
-            updateItem(newItem.id, { angles });
+
+            await updateItem(realId, { angles });
         } catch (err: any) {
-            console.error('[PipelineContext] Failed to generate angles:', err);
-            const errorMessage = err.message || 'An unexpected error occurred while generating angles.';
-            setError(errorMessage);
-            // Also update the item status to reflect error if needed, but keeping it in ideation for now
+            console.error('[PipelineContext] Failed to start capture:', err);
+            setError(err.message || 'An unexpected error occurred.');
         } finally {
             setIsLoading(false);
+        }
+    }, [updateItem]);
+
+    // Regenerate angles
+    const regenerateAngles = useCallback(async (itemId: string) => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            // We need rawInput but we can't use 'items' here easily without dependencies
+            // So we'll find it from the items state inside setItems or just accept it's a dependency
+            // Actually, regenerateAngles usually only called for the currentItem or similar.
+            // Let's add 'items' to dependencies to keep it simple for now, or use a ref.
+            // But we already have currentItem. Let's use the ID passed.
+            setItems(prev => {
+                const item = prev.find(i => i.id === itemId);
+                if (item) {
+                    generateStrategicAngles(item.rawInput).then(angles => {
+                        updateItem(itemId, { angles });
+                    }).catch(err => {
+                        setError(err.message);
+                    }).finally(() => {
+                        setIsLoading(false);
+                    });
+                }
+                return prev;
+            });
+        } catch (err: any) {
+            setError(err.message || 'Failed to generate angles.');
+            setIsLoading(false);
+        }
+    }, [updateItem]);
+
+    // Delete item
+    const deleteItem = useCallback(async (itemId: string) => {
+        try {
+            await deletePipelineAction(itemId);
+            setItems(prev => prev.filter(i => i.id !== itemId));
+            setCurrentItem(prev => (prev?.id === itemId ? null : prev));
+        } catch (error) {
+            console.error('Failed to delete item:', error);
         }
     }, []);
 
-    // Regenerate angles for an existing item
-    const regenerateAngles = useCallback(async (itemId: string) => {
-        const item = items.find(i => i.id === itemId);
-        if (!item) return;
-
-        setIsLoading(true);
-        setError(null);
-        updateItem(itemId, { angles: undefined });
-
-        try {
-            const angles = await generateStrategicAngles(item.rawInput);
-            if (!angles || angles.length === 0) {
-                throw new Error('No angles were returned. Try again or check your settings.');
-            }
-            updateItem(itemId, { angles });
-        } catch (err: any) {
-            console.error('[PipelineContext] Failed to regenerate angles:', err);
-            setError(err.message || 'Failed to generate angles. Please check your API key and try again.');
-        } finally {
-            setIsLoading(false);
-        }
-    }, [items]);
-
-    // Stage 1 → Stage 2: Select angle, move to media selection
+    // Stage 1 → Stage 2
     const selectAngle = useCallback((itemId: string, angle: string) => {
         updateItem(itemId, {
             selectedAngle: angle,
             status: 'media_selection' as PipelineStatus
         });
-    }, []);
+    }, [updateItem]);
 
-    // Stage 2: Select media type and start generation
+    // Stage 2: Media generation
     const selectMediaType = useCallback(async (itemId: string, mediaType: MediaType) => {
+        // We need the selectedAngle. Let's get it from the state.
+        // To avoid stale closures, we use the items dependency.
         const item = items.find(i => i.id === itemId);
         if (!item?.selectedAngle) return;
 
-        updateItem(itemId, {
+        await updateItem(itemId, {
             selectedMediaType: mediaType,
             status: 'media_generating' as PipelineStatus
         });
@@ -159,7 +196,7 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
 
         try {
             const mediaContent = await generateMediaContent(item.selectedAngle, mediaType);
-            updateItem(itemId, {
+            await updateItem(itemId, {
                 mediaContent,
                 status: 'media_review' as PipelineStatus
             });
@@ -168,40 +205,34 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
         } finally {
             setIsLoading(false);
         }
-    }, [items]);
+    }, [items, updateItem]);
 
-    // Stage 2: Approve media → move to scheduling
+    // Stage 2: Approve
     const approveMedia = useCallback(async (itemId: string) => {
-        const item = items.find(i => i.id === itemId);
-        if (!item?.selectedAngle || !item?.selectedMediaType) return;
-
         setIsLoading(true);
-
         try {
-            // In a production app, this would call a real content verification or platform-specific check
-            // For now, we move directly to scheduling stage with default platforms
             const socialPost = {
-                platforms: ['linkedin', 'x', 'instagram'],
-                scheduledTime: new Date(Date.now() + 3600000), // Default 1 hour delay
+                platforms: ['facebook'],
+                scheduledTime: new Date(Date.now() + 3600000),
             };
 
-            updateItem(itemId, {
+            await updateItem(itemId, {
                 socialPost,
                 status: 'scheduling' as PipelineStatus
             });
         } catch (error) {
-            console.error('Failed to generate social post:', error);
+            console.error('Failed to approve media:', error);
         } finally {
             setIsLoading(false);
         }
-    }, [items]);
+    }, [updateItem]);
 
-    // Stage 2: Reject media with feedback → regenerate
+    // Stage 2: Reject
     const rejectMedia = useCallback(async (itemId: string, feedback: string) => {
         const item = items.find(i => i.id === itemId);
         if (!item?.selectedAngle || !item?.selectedMediaType) return;
 
-        updateItem(itemId, {
+        await updateItem(itemId, {
             rejectionFeedback: feedback,
             status: 'media_generating' as PipelineStatus,
             mediaContent: undefined
@@ -214,7 +245,7 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
                 item.selectedMediaType,
                 feedback
             );
-            updateItem(itemId, {
+            await updateItem(itemId, {
                 mediaContent,
                 status: 'media_review' as PipelineStatus
             });
@@ -223,17 +254,18 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
         } finally {
             setIsLoading(false);
         }
-    }, [items]);
+    }, [items, updateItem]);
 
-    // Stage 2: Go back to media type selection
+    // Stage 2: Change media type
     const changeMediaType = useCallback((itemId: string) => {
         updateItem(itemId, {
             selectedMediaType: undefined,
             mediaContent: undefined,
             status: 'media_selection' as PipelineStatus
         });
-    }, []);
+    }, [updateItem]);
 
+    // Stage 3: Confirm post
     const confirmPost = useCallback(async (itemId: string) => {
         const item = items.find(i => i.id === itemId);
         if (!item?.mediaContent || !item?.socialPost) return;
@@ -247,15 +279,81 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
             );
 
             if (result.success) {
-                updateItem(itemId, { status: 'scheduled' as PipelineStatus });
+                await updateItem(itemId, { status: 'scheduled' as PipelineStatus });
             } else {
                 console.error('Failed to persist post:', result.error);
-                alert('Failed to schedule post in database: ' + result.error);
+                alert('Failed to schedule post: ' + result.error);
             }
         } catch (error) {
             console.error('Error in confirmPost:', error);
         } finally {
             setIsLoading(false);
+        }
+    }, [items, updateItem]);
+
+    const updateMediaContent = useCallback(async (itemId: string, updates: any) => {
+        setItems(prev => prev.map(item => {
+            if (item.id === itemId && item.mediaContent) {
+                return {
+                    ...item,
+                    mediaContent: { ...item.mediaContent, ...updates }
+                };
+            }
+            return item;
+        }));
+        setCurrentItem(prev => {
+            if (prev?.id === itemId && prev.mediaContent) {
+                return {
+                    ...prev,
+                    mediaContent: { ...prev.mediaContent, ...updates }
+                };
+            }
+            return prev;
+        });
+
+        const item = items.find(i => i.id === itemId);
+        if (item && item.mediaContent) {
+            try {
+                await savePipelineAction({
+                    id: itemId,
+                    mediaContent: { ...item.mediaContent, ...updates }
+                });
+            } catch (e) {
+                console.error('Failed to sync media content update to DB:', e);
+            }
+        }
+    }, [items]);
+
+    const updateScheduledTime = useCallback(async (itemId: string, date: Date) => {
+        setItems(prev => prev.map(item => {
+            if (item.id === itemId && item.socialPost) {
+                return {
+                    ...item,
+                    socialPost: { ...item.socialPost, scheduledTime: date }
+                };
+            }
+            return item;
+        }));
+        setCurrentItem(prev => {
+            if (prev?.id === itemId && prev.socialPost) {
+                return {
+                    ...prev,
+                    socialPost: { ...prev.socialPost, scheduledTime: date }
+                };
+            }
+            return prev;
+        });
+
+        const item = items.find(i => i.id === itemId);
+        if (item && item.socialPost) {
+            try {
+                await savePipelineAction({
+                    id: itemId,
+                    socialPost: { ...item.socialPost, scheduledTime: date }
+                });
+            } catch (e) {
+                console.error('Failed to sync scheduled time update to DB:', e);
+            }
         }
     }, [items]);
 
@@ -275,28 +373,9 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
                 changeMediaType,
                 confirmPost,
                 setCurrentItem,
-                updateMediaContent: (itemId: string, updates: any) => {
-                    const item = items.find(i => i.id === itemId);
-                    if (item?.mediaContent) {
-                        updateItem(itemId, {
-                            mediaContent: {
-                                ...item.mediaContent,
-                                ...updates
-                            }
-                        });
-                    }
-                },
-                updateScheduledTime: (itemId: string, date: Date) => {
-                    const item = items.find(i => i.id === itemId);
-                    if (item?.socialPost) {
-                        updateItem(itemId, {
-                            socialPost: {
-                                ...item.socialPost,
-                                scheduledTime: date
-                            }
-                        });
-                    }
-                },
+                deleteItem,
+                updateMediaContent,
+                updateScheduledTime,
             }}
         >
             {children}

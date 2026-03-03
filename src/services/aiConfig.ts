@@ -14,7 +14,7 @@ export const AI_CONFIG = {
     },
 };
 
-export type GeminiModel = 'gemini-2.5-flash-image' | 'gemini-3-pro-image-preview';
+export type GeminiModel = 'gemini-2.5-flash-image' | 'gemini-3-pro-image-preview' | 'gemini-1.5-flash' | 'gemini-1.5-pro';
 
 export interface GeminiConfig {
     model: GeminiModel;
@@ -64,8 +64,8 @@ export function getGoogleAIKey(): string | null {
 export function getGeminiModel(): GeminiModel {
     if (typeof window !== 'undefined') {
         const stored = localStorage.getItem('gemini_model');
-        if (stored === 'gemini-3-pro-image-preview' || stored === 'gemini-2.5-flash-image') {
-            return stored;
+        if (['gemini-3-pro-image-preview', 'gemini-2.5-flash-image', 'gemini-1.5-flash', 'gemini-1.5-pro'].includes(stored || '')) {
+            return stored as GeminiModel;
         }
     }
     // Default to Flash (Free)
@@ -83,6 +83,10 @@ export function getGeminiConfig(): GeminiConfig {
             model,
             imageSize: '2K',
         };
+    }
+
+    if (model === 'gemini-1.5-flash' || model === 'gemini-1.5-pro') {
+        return { model };
     }
 
     // Default / Flash

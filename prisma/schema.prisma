@@ -9,6 +9,22 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+model Pipeline {
+  id                String       @id @default(uuid())
+  rawInput          String
+  status            String       @default("ideation")
+  angles            String?      // JSON string of GeneratedAngle[]
+  selectedAngle     String?
+  selectedMediaType String?      // MediaType
+  mediaContent      String?      // JSON string of MediaContent
+  rejectionFeedback String?
+  socialPost        String?      // JSON string of SocialPost
+  brandId           String?
+  brand             BrandProfile? @relation(fields: [brandId], references: [id])
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+}
+
 model ScheduledPost {
   id            String       @id @default(uuid())
   content       String       // JSON string of MediaContent
@@ -31,4 +47,5 @@ model BrandProfile {
   keywords        String           @default("") // Comma separated
   updatedAt       DateTime         @updatedAt
   scheduledPosts  ScheduledPost[]
+  pipelines       Pipeline[]
 }

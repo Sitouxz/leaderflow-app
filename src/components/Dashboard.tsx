@@ -39,7 +39,8 @@ export default function Dashboard() {
         changeMediaType,
         confirmPost,
         setCurrentItem,
-        updateScheduledTime
+        updateScheduledTime,
+        deleteItem
     } = usePipeline();
 
     const [showCaptureModal, setShowCaptureModal] = useState(false);
@@ -126,7 +127,7 @@ export default function Dashboard() {
 
         switch (activeTab) {
             case 'library':
-                return <LibraryStage items={scheduledItems} onCardClick={setCurrentItem} />;
+                return <LibraryStage items={items} onCardClick={setCurrentItem} onDelete={deleteItem} />;
             case 'cognition':
                 return <CognitionStage items={items} publishedCount={scheduledItems.length} />;
             default:

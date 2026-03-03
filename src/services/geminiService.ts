@@ -57,12 +57,14 @@ async function callGeminiImageAPI(prompt: string, apiKey: string, retries = 3): 
 
     for (let attempt = 0; attempt <= retries; attempt++) {
         try {
-            console.log(`[Gemini] Generating image with ${geminiConfig.model} (Attempt ${attempt + 1}/${retries + 1})...`);
+            console.log(`[Gemini] Generating content with ${geminiConfig.model} (Attempt ${attempt + 1}/${retries + 1})...`);
+
+            const isImageModel = geminiConfig.model.includes('image') || geminiConfig.model.includes('2.5-flash');
 
             const responseStream = await ai.models.generateContentStream({
                 model: geminiConfig.model,
                 contents: { parts: [{ text: prompt }] },
-                config: config
+                config: isImageModel ? config : undefined
             });
 
             for await (const chunk of responseStream) {
@@ -78,15 +80,25 @@ async function callGeminiImageAPI(prompt: string, apiKey: string, retries = 3): 
             return null;
 
         } catch (error: any) {
-            console.error('[Gemini] API error:', error);
-            const isRateLimit = error?.status === 429 || error?.code === 429 || error?.message?.includes('429');
+            console.error('[Gemini] API error details:', JSON.stringify(error, null, 2));
+
+            const errorMsg = error?.message || '';
+            const isRateLimit = error?.status === 429 || error?.code === 429 || errorMsg.includes('429');
+            const isQuotaExceeded = errorMsg.includes('Quota exceeded') || errorMsg.includes('RESOURCE_EXHAUSTED');
+
+            if (isQuotaExceeded) {
+                if (errorMsg.includes('limit: 0')) {
+                    throw new Error('Gemini API quota is 0 for this model. Please check your plan at aistudio.google.com/app/plan');
+                }
+                throw new Error('Gemini API quota exceeded. Please try again later or check your usage limits.');
+            }
 
             if (isRateLimit && attempt < retries) {
                 const waitTime = 5000 * Math.pow(2, attempt);
-                await delayWithCountdown(waitTime, `Gemini Image (Attempt ${attempt + 1}/${retries})`);
+                await delayWithCountdown(waitTime, `Gemini (Attempt ${attempt + 1}/${retries})`);
                 continue;
             }
-            if (!isRateLimit) return null;
+            if (!isRateLimit) throw error;
         }
     }
     return null;
@@ -161,9 +173,12 @@ export async function generateMediaContent(
         }
 
         return content;
-    } catch (error) {
+    } catch (error: any) {
         console.error('[Gemini Service] Error:', error);
-        throw error;
+        if (error.message?.includes('quota') || error.message?.includes('limit')) {
+            throw error;
+        }
+        throw new Error(error.message || 'Gemini image generation failed.');
     }
 }
 

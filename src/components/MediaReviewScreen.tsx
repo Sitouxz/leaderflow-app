@@ -152,7 +152,7 @@ export default function MediaReviewScreen({
                             mediaUrl={currentImage}
                             caption={content.caption}
                             hashtags={content.hashtags}
-                            platforms={item.socialPost?.platforms || ['linkedin', 'x', 'instagram']}
+                            platforms={item.socialPost?.platforms || ['facebook']}
                         />
                         {content.previewUrls && content.previewUrls.length > 1 && (
                             <div className="flex gap-2 overflow-x-auto p-2 scrollbar-hide">
@@ -289,7 +289,7 @@ export default function MediaReviewScreen({
                         <div className="bg-surface-dark border border-white/5 rounded-2xl p-4">
                             <span className="text-white/40 text-xs uppercase tracking-wider block mb-3">Platform Compliance</span>
                             <div className="space-y-3">
-                                {['LinkedIn', 'Twitter', 'Instagram'].map((platform) => (
+                                {['Facebook', 'LinkedIn', 'Twitter', 'Instagram'].map((platform) => (
                                     <div key={platform} className="flex items-center justify-between py-1 px-1">
                                         <span className="text-white/70 text-sm">{platform}</span>
                                         <span className="text-emerald-400 text-xs font-medium flex items-center gap-1.5 bg-emerald-400/10 px-2 py-0.5 rounded-md">

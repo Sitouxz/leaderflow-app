@@ -179,8 +179,10 @@ export default function AISettingsPanel({ onBack }: AISettingsPanelProps) {
                                 onChange={(e) => setGeminiModel(e.target.value as GeminiModel)}
                                 className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-primary/50 [&>option]:bg-zinc-900"
                             >
-                                <option value="gemini-2.5-flash-image">Gemini 2.5 Flash (Free Tier)</option>
-                                <option value="gemini-3-pro-image-preview">Gemini 3 Pro (Paid Tier)</option>
+                                <option value="gemini-2.5-flash-image">Gemini 2.5 Flash (Free / Image Support)</option>
+                                <option value="gemini-1.5-flash">Gemini 1.5 Flash (Standard)</option>
+                                <option value="gemini-1.5-pro">Gemini 1.5 Pro (High Quality)</option>
+                                <option value="gemini-3-pro-image-preview">Gemini 3 Pro (Paid / 2K Images)</option>
                             </select>
                         </div>
 
@@ -192,12 +194,20 @@ export default function AISettingsPanel({ onBack }: AISettingsPanelProps) {
                             {googleAIStatus === 'testing' ? 'Testing...' : 'Save & Test Connection'}
                         </button>
                     </div>
-                    <p className="text-white/30 text-xs mt-3">
-                        Get your API key at{' '}
-                        <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                            aistudio.google.com
-                        </a>
-                    </p>
+
+                    <div className="mt-4 space-y-2">
+                        <p className="text-white/30 text-xs text-center">
+                            If you encounter 429 quota errors, please check your plan:
+                        </p>
+                        <div className="flex justify-center gap-4">
+                            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-primary text-xs hover:underline flex items-center gap-1">
+                                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>key</span> API Keys
+                            </a>
+                            <a href="https://aistudio.google.com/app/plan" target="_blank" rel="noopener noreferrer" className="text-primary text-xs hover:underline flex items-center gap-1">
+                                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>account_balance_wallet</span> Check Quota
+                            </a>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Status Message */}

@@ -21,7 +21,7 @@ const PLATFORMS = [
 
 export default function SchedulingScreen({ item, onConfirm, onBack, onUpdateSchedule }: SchedulingScreenProps) {
     const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(
-        item.socialPost?.platforms || ['linkedin', 'x']
+        item.socialPost?.platforms || ['facebook']
     );
     const [isEditingSchedule, setIsEditingSchedule] = useState(false);
     const [editDate, setEditDate] = useState<Date | null>(null);
